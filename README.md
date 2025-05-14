@@ -1,4 +1,4 @@
-# datarobot-agent-templates
+# [DataRobot AI Agent Templates](https://github.com/datarobot-community/datarobot-agent-templates)
 This repository contains templates for building and deploying AI agents using multi-agent frameworks. The templates
 are designed to help users quickly set up their own agents with minimal configuration. Some of the common operations
 and workflows supported are local and remote (via CodeSpaces) development and iteration, and building and deploying
