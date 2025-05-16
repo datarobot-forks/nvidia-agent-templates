@@ -15,7 +15,7 @@ from unittest.mock import ANY, Mock, patch
 
 import pytest
 
-from custom_model.my_agent_class.agent import MyAgent
+from custom_model.agent import MyAgent
 
 
 class TestMyAgentCrewAI:
@@ -56,18 +56,18 @@ class TestMyAgentCrewAI:
         assert agent.api_base == "test_base"
         assert agent.verbose is True
 
-    @patch("custom_model.my_agent_class.agent.LLM")
+    @patch("custom_model.agent.LLM")
     def test_llm_property(self, mock_llm, agent):
         # Test that LLM is created with correct parameters
         agent.llm_with_datarobot_llm_gateway
         mock_llm.assert_called_once_with(
-            model="datarobot/azure/gpt-4",
+            model="datarobot/vertex_ai/gemini-1.5-flash-002",
             clientId="custom-model",
             api_base="test_base",
             api_key="test_key",
         )
 
-    @patch("custom_model.my_agent_class.agent.Agent")
+    @patch("custom_model.agent.Agent")
     def test_agent_planner_property(self, mock_agent, agent):
         # Mock the llm property
         mock_llm = Mock()
@@ -84,7 +84,7 @@ class TestMyAgentCrewAI:
                 llm=ANY,
             )
 
-    @patch("custom_model.my_agent_class.agent.Agent")
+    @patch("custom_model.agent.Agent")
     def test_agent_writer_property(self, mock_agent, agent):
         # Mock the llm property
         mock_llm = Mock()
@@ -101,7 +101,7 @@ class TestMyAgentCrewAI:
                 llm=ANY,
             )
 
-    @patch("custom_model.my_agent_class.agent.Agent")
+    @patch("custom_model.agent.Agent")
     def test_agent_editor_property(self, mock_agent, agent):
         # Mock the llm property
         mock_llm = Mock()
@@ -118,7 +118,7 @@ class TestMyAgentCrewAI:
                 llm=ANY,
             )
 
-    @patch("custom_model.my_agent_class.agent.Task")
+    @patch("custom_model.agent.Task")
     def test_task_plan_property(self, mock_task, agent):
         # Mock the agent_planner property
         mock_planner = Mock()
@@ -130,7 +130,7 @@ class TestMyAgentCrewAI:
                 agent=ANY,
             )
 
-    @patch("custom_model.my_agent_class.agent.Task")
+    @patch("custom_model.agent.Task")
     def test_task_write_property(self, mock_task, agent):
         # Mock the agent_planner property
         mock_planner = Mock()
@@ -142,7 +142,7 @@ class TestMyAgentCrewAI:
                 agent=ANY,
             )
 
-    @patch("custom_model.my_agent_class.agent.Task")
+    @patch("custom_model.agent.Task")
     def test_task_edit_property(self, mock_task, agent):
         # Mock the agent_planner property
         mock_planner = Mock()

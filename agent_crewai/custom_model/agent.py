@@ -51,7 +51,7 @@ class MyAgent:
     @property
     def llm_with_datarobot_llm_gateway(self) -> LLM:
         return LLM(
-            model="datarobot/azure/gpt-4",
+            model="datarobot/vertex_ai/gemini-1.5-flash-002",
             clientId="custom-model",
             api_base=self.api_base,
             api_key=self.api_key,
@@ -60,7 +60,7 @@ class MyAgent:
     @property
     def llm_with_datarobot_deployment(self) -> LLM:
         return LLM(
-            model="datarobot/azure/gpt-4",
+            model="datarobot/vertex_ai/gemini-1.5-flash-002",
             api_base=f"{self.api_base}/api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/",
             api_key=self.api_key,
         )
