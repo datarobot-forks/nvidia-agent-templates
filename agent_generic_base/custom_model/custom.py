@@ -11,10 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# isort: off
+# Telemetry configurations
+from helpers_telemetry import instrument_requests  # noqa # pylint: disable=unused-import
+from helpers_telemetry import instrument_aiohttp  # noqa # pylint: disable=unused-import
+from helpers_telemetry import instrument_openai  # noqa # pylint: disable=unused-import
+from helpers_telemetry import instrument_crewai  # noqa # pylint: disable=unused-import
+# isort: on
 
 from typing import Dict, Iterator, Union, cast
 
 from agent import MyAgent
+from auth import initialize_authorization_context
 from helpers import (
     create_completion_from_response_text,
     create_inputs_from_completion_params,
@@ -58,6 +66,10 @@ def chat(
         )
     """
     _ = model
+
+    # Initialize the authorization context for downstream agents and tools to retrieve
+    # access tokens for external services.
+    initialize_authorization_context(completion_create_params)
 
     # Instantiate the agent, all fields from the completion_create_params are passed to the agent
     # allowing environment variables to be passed during execution

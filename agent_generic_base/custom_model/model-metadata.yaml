@@ -1,4 +1,8 @@
 ---
-name: CrewAI Multi-Agent Example
+name: agent_generic_base
 type: inference
 targetType: textgeneration
+runtimeParameterDefinitions:
+  - fieldName: OTEL_SDK_ENABLED
+    defaultValue: true
+    type: boolean

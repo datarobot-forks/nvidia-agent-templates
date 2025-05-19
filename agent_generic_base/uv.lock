@@ -49,6 +49,16 @@ dev = [
     { name = "ruff" },
     { name = "yamlfix" },
 ]
+telemetry = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation-aiohttp-client" },
+    { name = "opentelemetry-instrumentation-crewai" },
+    { name = "opentelemetry-instrumentation-langchain" },
+    { name = "opentelemetry-instrumentation-llamaindex" },
+    { name = "opentelemetry-instrumentation-openai" },
+    { name = "opentelemetry-instrumentation-requests" },
+    { name = "opentelemetry-sdk" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -68,6 +78,14 @@ requires-dist = [
     { name = "llama-index-llms-openai", marker = "extra == 'agents'", specifier = ">=0.3.38" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8.0" },
     { name = "openai", specifier = ">=1.76.2" },
+    { name = "opentelemetry-api", marker = "extra == 'telemetry'", specifier = ">=1.33.0" },
+    { name = "opentelemetry-instrumentation-aiohttp-client", marker = "extra == 'telemetry'", specifier = ">=0.54b0" },
+    { name = "opentelemetry-instrumentation-crewai", marker = "extra == 'telemetry'", specifier = ">=0.40.5" },
+    { name = "opentelemetry-instrumentation-langchain", marker = "extra == 'telemetry'", specifier = ">=0.40.5" },
+    { name = "opentelemetry-instrumentation-llamaindex", marker = "extra == 'telemetry'", specifier = ">=0.40.5" },
+    { name = "opentelemetry-instrumentation-openai", marker = "extra == 'telemetry'", specifier = ">=0.40.5" },
+    { name = "opentelemetry-instrumentation-requests", marker = "extra == 'telemetry'", specifier = ">=0.54b0" },
+    { name = "opentelemetry-sdk", marker = "extra == 'telemetry'", specifier = ">=1.33.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.2.0" },
     { name = "pydantic", marker = "extra == 'dev'", specifier = ">=2.6.1" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4.0" },
@@ -81,7 +99,7 @@ requires-dist = [
     { name = "uvicorn", specifier = ">=0.22.0" },
     { name = "yamlfix", marker = "extra == 'dev'", specifier = ">=1.17.0" },
 ]
-provides-extras = ["agents", "dev"]
+provides-extras = ["agents", "telemetry", "dev"]
 
 [[package]]
 name = "aiohappyeyeballs"
@@ -1237,7 +1255,7 @@ name = "exceptiongroup"
 version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0b/9f/a65090624ecf468cdca03533906e7c69ed7588582240cfe7cc9e770b50eb/exceptiongroup-1.3.0.tar.gz", hash = "sha256:b241f5885f560bc56a59ee63ca4c6a8bfa46ae4ad651af316d4e81817bb9fd88", size = 29749 }
 wheels = [
@@ -3422,6 +3440,22 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/2b/00/00ab7ce770c419337e3286c29e59f979a05694aebf15a957bd17d7a0c2cb/opentelemetry_instrumentation-0.54b0.tar.gz", hash = "sha256:2949d0bbf2316eb5d928a5ef610d0a8a2c261ba80167d878abf6016e1c4ae7bb", size = 28434 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/17/e9/426f4e5da65e2f8f53e7a8d2551bb56e49776cccf0b99cd99ab6295542cd/opentelemetry_instrumentation-0.54b0-py3-none-any.whl", hash = "sha256:1a502238f8af65625ad48800d268d467653e319d959e1732d3b3248916d21327", size = 31018 },
+]
+
+[[package]]
+name = "opentelemetry-instrumentation-aiohttp-client"
+version = "0.54b0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-semantic-conventions" },
+    { name = "opentelemetry-util-http" },
+    { name = "wrapt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0d/e2/ff557f61aba3266a3abe41f8c366d06b15822c879f068db66479e3c15c25/opentelemetry_instrumentation_aiohttp_client-0.54b0.tar.gz", hash = "sha256:9683e98f3dfb20b3681e492a0fd03497a2ef3362905c7c556a71cd6287f5f1d5", size = 13643 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f6/75/5cb98c9d0a5c997bdb07041c6cdee3dc122c226f0243c1993c8b12abd97b/opentelemetry_instrumentation_aiohttp_client-0.54b0-py3-none-any.whl", hash = "sha256:d6d7bcbd7238ecec02cebc8a98d46ceef48aa0ab76dcd5caea65aaa6469ff0a1", size = 11660 },
 ]
 
 [[package]]

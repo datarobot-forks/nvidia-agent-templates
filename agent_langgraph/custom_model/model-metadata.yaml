@@ -1,4 +1,8 @@
 ---
 name: agent_langgraph
 type: inference
-targetType: agenticworkflow
+targetType: textgeneration
+runtimeParameterDefinitions:
+  - fieldName: OTEL_SDK_ENABLED
+    defaultValue: true
+    type: boolean
