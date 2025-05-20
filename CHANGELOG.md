@@ -6,7 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
-- N/A
+## 0.0.5
+- Finalize support for open telemetry to all frameworks.
+- Update execution environments to resolve CVEs.
+- Revert target types to `textgeneration` to resolve deployment issues.
+- 
+## 0.0.4
+- Add initial support for open telemetry.
+
+## 0.0.3
+- Bug fixes
+- Allow sending OpenAI complete dictionary to run_agent.
+- Add support for integrating agent tooling.
 
 ## 0.0.2
 - Add support for `LlamaIndex` agents.
