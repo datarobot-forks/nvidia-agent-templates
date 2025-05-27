@@ -11,10 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import functools
 import os
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Tuple, TypeVar, Union, cast
+from typing import Any, Dict, Optional, Tuple, Union
 
 from langchain_community.chat_models import ChatLiteLLM
 from langchain_core.messages import HumanMessage
@@ -23,35 +22,19 @@ from langgraph.graph.state import CompiledGraph, CompiledStateGraph
 from langgraph.prebuilt import create_react_agent
 from langgraph.types import Command
 
-FuncT = TypeVar("FuncT", bound=Callable[..., Any])
-
-
-def deployment_response_langgraph(func: FuncT) -> FuncT:
-    @functools.wraps(func)
-    def wrapper_response_langgraph(
-        *args: Any, **kwargs: Any
-    ) -> Tuple[str, Dict[str, int]]:
-        value: List[Any] = func(*args, **kwargs)
-
-        usage_metrics: Dict[str, int] = {
-            "completion_tokens": 0,
-            "prompt_tokens": 0,
-            "total_tokens": 0,
-        }
-        response = value[-1]
-        node_name = next(iter(response))
-        output = str(response[node_name]["messages"][-1].content)
-        return output, usage_metrics
-
-    return cast(FuncT, wrapper_response_langgraph)
-
 
 class MyAgent:
     def __init__(
-        self, api_key: str, api_base: str, verbose: Union[bool, str], **kwargs: Any
+        self,
+        api_key: Optional[str] = None,
+        api_base: Optional[str] = None,
+        model: Optional[str] = None,
+        verbose: Optional[Union[bool, str]] = True,
+        **kwargs: Any,
     ):
-        self.api_key = api_key
-        self.api_base = api_base
+        self.api_key = api_key or os.environ.get("DATAROBOT_API_TOKEN")
+        self.api_base = api_base or os.environ.get("DATAROBOT_ENDPOINT")
+        self.model = model
         if isinstance(verbose, str):
             self.verbose = verbose.lower() == "true"
         elif isinstance(verbose, bool):
@@ -59,8 +42,8 @@ class MyAgent:
 
     @property
     def llm_with_datarobot_llm_gateway(self) -> ChatLiteLLM:
-        os.environ["DATAROBOT_API_KEY"] = self.api_key
-        os.environ["DATAROBOT_API_BASE"] = self.api_base
+        os.environ["DATAROBOT_API_TOKEN"] = self.api_key  # type: ignore[assignment]
+        os.environ["DATAROBOT_ENDPOINT"] = self.api_base  # type: ignore[assignment]
         return ChatLiteLLM(
             model="datarobot/vertex_ai/gemini-1.5-flash-002",
             api_base=self.api_base,
@@ -75,8 +58,8 @@ class MyAgent:
         deployment_url = (
             f"{self.api_base}/api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/"
         )
-        os.environ["DATAROBOT_API_KEY"] = self.api_key
-        os.environ["DATAROBOT_API_BASE"] = deployment_url
+        os.environ["DATAROBOT_API_TOKEN"] = self.api_key  # type: ignore[assignment]
+        os.environ["DATAROBOT_ENDPOINT"] = deployment_url
         return ChatLiteLLM(
             model="datarobot/vertex_ai/gemini-1.5-flash-002",
             api_base=deployment_url,
@@ -242,8 +225,7 @@ class MyAgent:
         execution_graph = workflow.compile()
         return execution_graph
 
-    @deployment_response_langgraph
-    def run(self, inputs: Dict[str, str]) -> list[Any]:
+    def run(self, inputs: Dict[str, str]) -> Tuple[list[Any], Dict[str, int]]:
         # This crew uses one input which is a dictionary with the topic
         # Example: {"topic": "Artificial Intelligence"}
         input_message = {
@@ -264,5 +246,9 @@ class MyAgent:
         )
         # Execute the graph and store calls to the agent in events
         events = [event for event in graph_stream]
-
-        return events
+        usage_metrics: Dict[str, int] = {
+            "completion_tokens": 0,
+            "prompt_tokens": 0,
+            "total_tokens": 0,
+        }
+        return events, usage_metrics

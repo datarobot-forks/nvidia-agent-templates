@@ -23,6 +23,11 @@ from openai.types.chat import (
     CompletionCreateParams,
 )
 from openai.types.chat.chat_completion import Choice
+from ragas import MultiTurnSample
+
+
+class CustomModelChatResponse(ChatCompletion):
+    pipeline_interactions: str | None = None
 
 
 def create_inputs_from_completion_params(
@@ -50,8 +55,10 @@ def create_inputs_from_completion_params(
 
 
 def create_completion_from_response_text(
-    response_text: str, usage_metrics: Dict[str, int]
-) -> ChatCompletion:
+    response_text: str,
+    usage_metrics: Dict[str, int],
+    pipeline_interactions: MultiTurnSample | None = None,
+) -> CustomModelChatResponse:
     """Convert the text of the LLM response into a chat completion response."""
     completion_id = str(uuid.uuid4())
     completion_timestamp = int(time.time())
@@ -61,13 +68,28 @@ def create_completion_from_response_text(
         message=ChatCompletionMessage(role="assistant", content=response_text),
         finish_reason="stop",
     )
-    completion = ChatCompletion(
+    completion = CustomModelChatResponse(
         id=completion_id,
         object="chat.completion",
         choices=[choice],
         created=completion_timestamp,
         model="MODEL_NAME",
         usage=CompletionUsage(**usage_metrics),
+        pipeline_interactions=pipeline_interactions.model_dump_json()
+        if pipeline_interactions
+        else None,
     )
-
     return completion
+
+
+def to_custom_model_response(
+    agent_result: str,
+    usage_metrics: Dict[str, int],
+) -> CustomModelChatResponse:
+    """Convert the agent output to a custom model response."""
+    response = create_completion_from_response_text(
+        response_text=agent_result,
+        usage_metrics=usage_metrics,
+        pipeline_interactions=None,
+    )
+    return response

@@ -1,0 +1,155 @@
+---
+# https://taskfile.dev
+version: '3'
+includes:
+  agent_crewai:
+    taskfile: ./agent_crewai/Taskfile.yml
+    dir: ./agent_crewai
+  agent_generic_base:
+    taskfile: ./agent_generic_base/Taskfile.yml
+    dir: ./agent_generic_base
+  agent_langgraph:
+    taskfile: ./agent_langgraph/Taskfile.yml
+    dir: ./agent_langgraph
+  agent_llamaindex:
+    taskfile: ./agent_llamaindex/Taskfile.yml
+    dir: ./agent_llamaindex
+tasks:
+  default:
+    cmds:
+      - echo "Available task commands:"
+      - echo "  To run commands, use the following format:"
+      - echo "    task <command> [<args>]"
+      - echo ""
+      - echo "Commands:"
+      - echo "help                           - Show this help message"
+      - echo "req                            - Update dependencies for all agents"
+      - echo "lint                           - Lint all agent templates"
+      - echo "update AGENT=<agent>           - Update a specific agent"
+      - echo "update-branch AGENT=<agent>    - Update a specific agent to a specific branch"
+      - echo "              BRANCH=<branch>"
+      - echo "update-all                     - Update all agents to latest"
+      - echo "deploy                         - Deploy the infrastructure using pulumi"
+    silent: true
+  help:
+    cmds:
+      - task: default
+  req:
+    cmds:
+      - echo "Updating dependencies for all agents"
+      - task: agent_crewai:req
+      - task: agent_generic_base:req
+      - task: agent_langgraph:req
+      - task: agent_llamaindex:req
+      - echo "Updating infra dependencies"
+      - cd ./infra && uv sync --all-extras
+    silent: true
+  lint:
+    cmds:
+      - echo "Linting all agent templates"
+      - task: agent_crewai:lint
+      - task: agent_generic_base:lint
+      - task: agent_langgraph:lint
+      - task: agent_llamaindex:lint
+      - echo "Linting infra"
+      - cd ./infra && uv run ruff check . --fix && uv run ruff format .
+    silent: true
+  create-commit:
+    cmds:
+      - |
+        if [[ `git status --porcelain` ]]; then
+          echo "OK: Changes detected."
+          git status
+          git add -A
+          git ci -m "Sync af-component-agent"
+        else
+          echo "SKIPPING: No changes were detected."
+        fi
+    silent: true
+  update:
+    cmds:
+      - echo "Updating {{.AGENT}}"
+      - uvx copier update -a ".datarobot/answers/agent-{{.AGENT}}.yml" -A
+    requires:
+      vars:
+        - name: AGENT
+          enum:
+            - agent_crewai
+            - agent_generic_base
+            - agent_langgraph
+            - agent_llamaindex
+    silent: true
+  update-branch:
+    cmds:
+      - echo "Updating {{.AGENT}} to branch {{.BRANCH}}"
+      - uvx copier update --vcs-ref "{{.BRANCH}}" -a ".datarobot/answers/agent-{{.AGENT}}.yml" -A
+    requires:
+      vars:
+        - name: AGENT
+          enum:
+            - agent_crewai
+            - agent_generic_base
+            - agent_langgraph
+            - agent_llamaindex
+        - name: BRANCH
+    silent: true
+  update-all:
+    cmds:
+      - echo "Updating all agent components to latest"
+      - task: update
+        vars:
+          AGENT: agent_crewai
+      - task: create-commit
+      - task: update
+        vars:
+          AGENT: agent_generic_base
+      - task: create-commit
+      - task: update
+        vars:
+          AGENT: agent_langgraph
+      - task: create-commit
+      - task: update
+        vars:
+          AGENT: agent_llamaindex
+      - task: create-commit
+  update-all-branch:
+    cmds:
+      - echo "Updating all agent components to latest"
+      - task: update-branch
+        vars:
+          AGENT: agent_crewai
+          BRANCH: "{{.BRANCH}}"
+      - task: create-commit
+      - task: update-branch
+        vars:
+          AGENT: agent_generic_base
+          BRANCH: "{{.BRANCH}}"
+      - task: create-commit
+      - task: update-branch
+        vars:
+          AGENT: agent_langgraph
+          BRANCH: "{{.BRANCH}}"
+      - task: create-commit
+      - task: update-branch
+        vars:
+          AGENT: agent_llamaindex
+          BRANCH: "{{.BRANCH}}"
+      - task: create-commit
+    requires:
+      vars:
+        - name: BRANCH
+  build:
+    cmds:
+      - echo "Running pulumi up with [BUILD] mode"
+      - export DEPLOY=0 && set -o allexport && source .env && cd ./infra && pulumi up
+    silent: true
+  deploy:
+    cmds:
+      - echo "Running pulumi up with [DEPLOY] mode"
+      - export DEPLOY=1 && set -o allexport && source .env && cd ./infra && pulumi up
+    silent: true
+  destroy:
+    cmds:
+      - echo "Running pulumi destroy"
+      - set -o allexport && source .env && cd ./infra && pulumi destroy
+    silent: true

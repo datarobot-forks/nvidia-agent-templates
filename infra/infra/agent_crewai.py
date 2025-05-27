@@ -46,6 +46,14 @@ __all__ = [
     "agent_crewai_application_name",
     "agent_crewai_resource_name",
     "agent_crewai_application_path",
+    "agent_crewai_execution_environment_id",
+    "agent_crewai_prediction_environment",
+    "agent_crewai_custom_model",
+    "agent_crewai_agent_deployment_id",
+    "agent_crewai_registered_model_args",
+    "agent_crewai_deployment_args",
+    "agent_crewai_agent_deployment",
+    "agent_crewai_app_runtime_parameters",
 ]
 
 agent_crewai_application_name: str = "agent_crewai"
@@ -55,15 +63,19 @@ agent_crewai_application_path = project_dir.parent / "agent_crewai"
 
 # Start of Pulumi settings and application infrastructure
 if "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT" in os.environ:
-    execution_environment_id = os.environ["DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT"]
-    pulumi.info(f"Using existing execution environment '{execution_environment_id}'")
-    execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
-        id=execution_environment_id,
+    agent_crewai_execution_environment_id = os.environ[
+        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT"
+    ]
+    pulumi.info(
+        "Using existing execution environment " + agent_crewai_execution_environment_id
+    )
+    agent_crewai_execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
+        id=agent_crewai_execution_environment_id,
         resource_name="Execution Environment [PRE-EXISTING] "
         + agent_crewai_resource_name,
     )
 else:
-    execution_environment = pulumi_datarobot.ExecutionEnvironment(
+    agent_crewai_execution_environment = pulumi_datarobot.ExecutionEnvironment(
         resource_name="Agent Python 3.11 " + agent_crewai_resource_name,
         programming_language="python",
         description="DataRobot Agent Execution Environment [Python 3.11]",
@@ -73,14 +85,14 @@ else:
         use_cases=["customModel", "notebook"],
     )
 
-prediction_environment = pulumi_datarobot.PredictionEnvironment(
+agent_crewai_prediction_environment = pulumi_datarobot.PredictionEnvironment(
     resource_name="Agent Prediction Environment " + agent_crewai_resource_name,
     platform=dr.enums.PredictionEnvironmentPlatform.DATAROBOT_SERVERLESS,
 )
 
-custom_model = pulumi_datarobot.CustomModel(
+agent_crewai_custom_model = pulumi_datarobot.CustomModel(
     resource_name="Agent Custom Model " + agent_crewai_resource_name,
-    base_environment_id=execution_environment.id,
+    base_environment_id=agent_crewai_execution_environment.id,
     target_type=dr.TARGET_TYPE.TEXT_GENERATION,
     target_name="response",
     language="python",
@@ -89,47 +101,66 @@ custom_model = pulumi_datarobot.CustomModel(
     folder_path=os.path.join(str(agent_crewai_application_path), "custom_model"),
 )
 
-registered_model_args = RegisteredModelArgs(
-    resource_name="Agent Registered Model " + agent_crewai_resource_name,
+# Export the IDs of the created resources
+pulumi.export("Use Case ID " + agent_crewai_resource_name, use_case.id)
+pulumi.export(
+    "Execution Environment ID " + agent_crewai_resource_name,
+    agent_crewai_execution_environment.id,
+)
+pulumi.export(
+    "Custom Model ID " + agent_crewai_resource_name, agent_crewai_custom_model.id
 )
 
-deployment_args = DeploymentArgs(
-    resource_name="Agent Deployment " + agent_crewai_resource_name,
-    label=f"Agent Deployment [{PROJECT_NAME}] " + agent_crewai_resource_name,
-    association_id_settings=pulumi_datarobot.DeploymentAssociationIdSettingsArgs(
-        column_names=["association_id"],
-        auto_generate_id=False,
-        required_in_prediction_requests=True,
-    ),
-    predictions_data_collection_settings=(
-        pulumi_datarobot.DeploymentPredictionsDataCollectionSettingsArgs(enabled=True)
-    ),
-    predictions_settings=(
-        pulumi_datarobot.DeploymentPredictionsSettingsArgs(
-            min_computes=0, max_computes=2
-        )
-    ),
-)
 
-agent_deployment = CustomModelDeployment(
-    resource_name="Agent Chat Deployment " + agent_crewai_resource_name,
-    use_case_ids=[use_case.id],
-    custom_model_version_id=custom_model.version_id,
-    prediction_environment=prediction_environment,
-    registered_model_args=registered_model_args,
-    deployment_args=deployment_args,
-)
+agent_crewai_agent_deployment_id = "None"
+if os.environ.get("DEPLOY") != "0":
+    agent_crewai_registered_model_args = RegisteredModelArgs(
+        resource_name="Agent Registered Model " + agent_crewai_resource_name,
+    )
 
-app_runtime_parameters = [
+    agent_crewai_deployment_args = DeploymentArgs(
+        resource_name="Agent Deployment " + agent_crewai_resource_name,
+        label=f"Agent Deployment [{PROJECT_NAME}] " + agent_crewai_resource_name,
+        association_id_settings=pulumi_datarobot.DeploymentAssociationIdSettingsArgs(
+            column_names=["association_id"],
+            auto_generate_id=False,
+            required_in_prediction_requests=True,
+        ),
+        predictions_data_collection_settings=(
+            pulumi_datarobot.DeploymentPredictionsDataCollectionSettingsArgs(
+                enabled=True
+            )
+        ),
+        predictions_settings=(
+            pulumi_datarobot.DeploymentPredictionsSettingsArgs(
+                min_computes=0, max_computes=2
+            )
+        ),
+    )
+
+    agent_crewai_agent_deployment = CustomModelDeployment(
+        resource_name="Agent Chat Deployment " + agent_crewai_resource_name,
+        use_case_ids=[use_case.id],
+        custom_model_version_id=agent_crewai_custom_model.version_id,
+        prediction_environment=agent_crewai_prediction_environment,
+        registered_model_args=agent_crewai_registered_model_args,
+        deployment_args=agent_crewai_deployment_args,
+    )
+    agent_crewai_agent_deployment_id = str(agent_crewai_agent_deployment.id)
+
+    pulumi.export(
+        "Agent Deployment ID " + agent_crewai_resource_name,
+        agent_crewai_agent_deployment.id,
+    )
+    pulumi.export(
+        "Agent Chat Completion Endpoint " + agent_crewai_resource_name,
+        f"{os.getenv('DATAROBOT_ENDPOINT')}/genai/agents/fromCustomModel/[Agent Deployment ID]/chat/",
+    )
+
+agent_crewai_app_runtime_parameters = [
     pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
         key=agent_crewai_application_name.upper() + "_DEPLOYMENT_ID",
         type="deployment",
-        value=agent_deployment.id,
+        value=agent_crewai_agent_deployment_id,
     ),
 ]
-
-pulumi.export("Use Case ID " + agent_crewai_resource_name, use_case.id)
-pulumi.export(
-    "Execution Environment ID " + agent_crewai_resource_name, execution_environment.id
-)
-pulumi.export("Deployment ID " + agent_crewai_resource_name, agent_deployment.id)

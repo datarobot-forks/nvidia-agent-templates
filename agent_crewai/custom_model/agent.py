@@ -11,38 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import functools
 import os
-from typing import Any, Callable, Dict, Tuple, TypeVar, Union, cast
+from typing import Any, Dict, Optional, Union
 
 from crewai import LLM, Agent, Crew, CrewOutput, Task
-
-FuncT = TypeVar("FuncT", bound=Callable[..., Any])
-
-
-def deployment_response_crewai(func: FuncT) -> FuncT:
-    @functools.wraps(func)
-    def wrapper_response_crewai(
-        *args: Any, **kwargs: Any
-    ) -> Tuple[str, Dict[str, int]]:
-        value: CrewOutput = func(*args, **kwargs)
-
-        usage_metrics: Dict[str, int] = {
-            "completion_tokens": value.token_usage.completion_tokens,
-            "prompt_tokens": value.token_usage.prompt_tokens,
-            "total_tokens": value.token_usage.total_tokens,
-        }
-        return str(value.raw), usage_metrics
-
-    return cast(FuncT, wrapper_response_crewai)
 
 
 class MyAgent:
     def __init__(
-        self, api_key: str, api_base: str, verbose: Union[bool, str], **kwargs: Any
+        self,
+        api_key: Optional[str] = None,
+        api_base: Optional[str] = None,
+        model: Optional[str] = None,
+        verbose: Optional[Union[bool, str]] = True,
+        **kwargs: Any,
     ):
-        self.api_key = api_key
-        self.api_base = api_base
+        self.api_key = api_key or os.environ.get("DATAROBOT_API_TOKEN")
+        self.api_base = api_base or os.environ.get("DATAROBOT_ENDPOINT")
+        self.model = model
         if isinstance(verbose, str):
             self.verbose = verbose.lower() == "true"
         elif isinstance(verbose, bool):
@@ -185,7 +171,6 @@ class MyAgent:
             verbose=self.verbose,
         )
 
-    @deployment_response_crewai
     def run(self, inputs: Dict[str, str]) -> CrewOutput:
         # This crew uses one input which is a dictionary with the topic
         # Example: {"topic": "Artificial Intelligence"}
