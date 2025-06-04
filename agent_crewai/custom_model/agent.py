@@ -12,12 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Tuple, Union
 
 from crewai import LLM, Agent, Crew, CrewOutput, Task
+from helpers import CrewAIEventListener, create_inputs_from_completion_params
+from openai.types.chat import CompletionCreateParams
+from ragas.messages import AIMessage
 
 
 class MyAgent:
+    """MyAgent is a custom agent that uses CrewAI to plan, write, and edit content.
+    It utilizes DataRobot's LLM Gateway or a specific deployment for language model interactions.
+    This example illustrates 3 agents that handle content creation tasks, including planning, writing,
+    and editing blog posts.
+    """
+
     def __init__(
         self,
         api_key: Optional[str] = None,
@@ -26,6 +35,23 @@ class MyAgent:
         verbose: Optional[Union[bool, str]] = True,
         **kwargs: Any,
     ):
+        """Initializes the MyAgent class with API key, base URL, model, and verbosity settings.
+
+        Args:
+            api_key: Optional[str]: API key for authentication with DataRobot services.
+                Defaults to None, in which case it will use the DATAROBOT_API_TOKEN environment variable.
+            api_base: Optional[str]: Base URL for the DataRobot API.
+                Defaults to None, in which case it will use the DATAROBOT_ENDPOINT environment variable.
+            model: Optional[str]: The LLM model to use.
+                Defaults to None.
+            verbose: Optional[Union[bool, str]]: Whether to enable verbose logging.
+                Accepts boolean or string values ("true"/"false"). Defaults to True.
+            **kwargs: Any: Additional keyword arguments passed to the agent.
+                Contains any parameters received in the CompletionCreateParams.
+
+        Returns:
+            None
+        """
         self.api_key = api_key or os.environ.get("DATAROBOT_API_TOKEN")
         self.api_base = api_base or os.environ.get("DATAROBOT_ENDPOINT")
         self.model = model
@@ -33,21 +59,53 @@ class MyAgent:
             self.verbose = verbose.lower() == "true"
         elif isinstance(verbose, bool):
             self.verbose = verbose
+        self.event_listener = CrewAIEventListener()
+
+    @property
+    def api_base_litellm(self) -> str:
+        """Returns a modified version of the API base URL suitable for LiteLLM.
+
+        Strips 'api/v2/' or 'api/v2' from the end of the URL if present.
+
+        Returns:
+            str: The modified API base URL.
+        """
+        if self.api_base:
+            if self.api_base.endswith("api/v2/"):
+                return self.api_base[:-7]  # Remove 'api/v2/'
+            elif self.api_base.endswith("api/v2"):
+                return self.api_base[:-6]  # Remove 'api/v2'
+            return self.api_base
+        return "https://api.datarobot.com"
 
     @property
     def llm_with_datarobot_llm_gateway(self) -> LLM:
+        """Returns a CrewAI LLM instance configured to use DataRobot's LLM Gateway.
+
+        This property can serve as a primary LLM backend for the agents. You can optionally
+        have multiple LLMs configured, such as one for DataRobot's LLM Gateway
+        and another for a specific DataRobot deployment, or even multiple deployments or
+        third-party LLMs.
+        """
         return LLM(
             model="datarobot/vertex_ai/gemini-1.5-flash-002",
             clientId="custom-model",
-            api_base=self.api_base,
+            api_base=self.api_base_litellm,
             api_key=self.api_key,
         )
 
     @property
     def llm_with_datarobot_deployment(self) -> LLM:
+        """Returns a CrewAI LLM instance configured to use DataRobot's LLM Deployments.
+
+        This property can serve as a primary LLM backend for the agents. You can optionally
+        have multiple LLMs configured, such as one for DataRobot's LLM Gateway
+        and another for a specific DataRobot deployment, or even multiple deployments or
+        third-party LLMs.
+        """
         return LLM(
             model="datarobot/vertex_ai/gemini-1.5-flash-002",
-            api_base=f"{self.api_base}/api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/",
+            api_base=f"{self.api_base_litellm}/api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/",
             api_key=self.api_key,
         )
 
@@ -171,7 +229,47 @@ class MyAgent:
             verbose=self.verbose,
         )
 
-    def run(self, inputs: Dict[str, str]) -> CrewOutput:
-        # This crew uses one input which is a dictionary with the topic
-        # Example: {"topic": "Artificial Intelligence"}
-        return self.crew().kickoff(inputs=inputs)
+    def run(
+        self, completion_create_params: CompletionCreateParams
+    ) -> Tuple[list[Any], CrewOutput]:
+        """Run the agent with the provided completion parameters.
+
+        [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
+
+        Inputs can be extracted from the completion_create_params in several ways. A helper function
+        `create_inputs_from_completion_params` is provided to extract the inputs as json or a string
+        from the 'user' portion of the input prompt. Alternatively you can extract and use one or
+        more inputs or messages from the completion_create_params["messages"] field.
+
+        Args:
+            completion_create_params (CompletionCreateParams): The parameters for
+                the completion request, which includes the input topic and other settings.
+        Returns:
+            Tuple[list[Any], CrewOutput]: A tuple containing a list of messages (events) and the crew output.
+
+        """
+        # Example helper for extracting inputs as a json from the completion_create_params["messages"]
+        # field with the 'user' role: (e.g. {"topic": "Artificial Intelligence"})
+        inputs = create_inputs_from_completion_params(completion_create_params)
+
+        # If inputs are a string, convert to a dictionary with 'topic' key for this example.
+        if isinstance(inputs, str):
+            inputs = {"topic": inputs}
+
+        print("Running agent with inputs:", inputs)
+
+        # Run the crew with the inputs
+        crew_output = self.crew().kickoff(inputs=inputs)
+
+        # Extract the response text from the crew output
+        response_text = str(crew_output.raw)
+
+        # Create a list of events from the event listener
+        events = self.event_listener.messages
+        if len(events) > 0:
+            last_message = events[-1].content
+            if last_message != response_text:
+                events.append(AIMessage(content=response_text))
+        else:
+            events = None
+        return events, crew_output

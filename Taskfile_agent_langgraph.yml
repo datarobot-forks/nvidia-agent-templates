@@ -1,0 +1,43 @@
+---
+# https://taskfile.dev
+version: '3'
+includes:
+  agent:
+    taskfile: ./agent_langgraph/Taskfile.yml
+    dir: ./agent_langgraph
+tasks:
+  default:
+    desc: "🗒️ Show all available tasks"
+    cmds:
+      - task --list
+    silent: true
+  setup:
+    desc: "🏗️ Setup the agent and infra environments"
+    cmds:
+      - echo "Updating agent environment"
+      - task: agent:req
+      - echo "Updating infra environment"
+      - cd ./infra && uv sync --all-extras
+    silent: true
+  build:
+    desc: "🔵 [agent_langgraph] Run Pulumi up in [BUILD] mode"
+    env:
+      AGENT_DEPLOY: 0
+    cmds:
+      - echo "Running pulumi up with [BUILD] mode"
+      - cd ./infra && pulumi up
+    silent: true
+  deploy:
+    desc: "🟢 [agent_langgraph] Run Pulumi up in [DEPLOY] mode"
+    env:
+      AGENT_DEPLOY: 1
+    cmds:
+      - echo "Running pulumi up with [DEPLOY] mode"
+      - cd ./infra && pulumi up
+    silent: true
+  destroy:
+    desc: "🔴 [agent_langgraph] Run Pulumi destroy"
+    cmds:
+      - echo "Running pulumi destroy"
+      - cd ./infra && pulumi destroy
+    silent: true

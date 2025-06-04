@@ -12,11 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
+import logging
 import time
 import uuid
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Union
 
 from crewai import CrewOutput
+from crewai.utilities.events import (
+    AgentExecutionCompletedEvent,
+    AgentExecutionStartedEvent,
+    CrewAIEventsBus,
+    CrewKickoffStartedEvent,
+    ToolUsageFinishedEvent,
+    ToolUsageStartedEvent,
+)
+from crewai.utilities.events.base_event_listener import BaseEventListener
 from openai.types import CompletionUsage
 from openai.types.chat import (
     ChatCompletion,
@@ -25,6 +35,63 @@ from openai.types.chat import (
 )
 from openai.types.chat.chat_completion import Choice
 from ragas import MultiTurnSample
+from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
+
+
+class CrewAIEventListener(BaseEventListener):  # type: ignore[misc]
+    def __init__(self) -> None:
+        super().__init__()
+        self.messages: list[Union[HumanMessage, AIMessage, ToolMessage]] = []
+
+    def setup_listeners(self, crewai_event_bus: CrewAIEventsBus) -> None:
+        @crewai_event_bus.on(CrewKickoffStartedEvent)  # type: ignore[misc]
+        def on_crew_execution_started(_: Any, event: CrewKickoffStartedEvent) -> None:
+            self.messages.append(
+                HumanMessage(content=f"Working on input '{json.dumps(event.inputs)}'")
+            )
+
+        @crewai_event_bus.on(AgentExecutionStartedEvent)  # type: ignore[misc]
+        def on_agent_execution_started(
+            _: Any, event: AgentExecutionStartedEvent
+        ) -> None:
+            self.messages.append(AIMessage(content=event.task_prompt, tool_calls=[]))
+
+        @crewai_event_bus.on(AgentExecutionCompletedEvent)  # type: ignore[misc]
+        def on_agent_execution_completed(
+            _: Any, event: AgentExecutionCompletedEvent
+        ) -> None:
+            self.messages.append(AIMessage(content=event.output, tool_calls=[]))
+
+        @crewai_event_bus.on(ToolUsageStartedEvent)  # type: ignore[misc]
+        def on_tool_usage_started(_: Any, event: ToolUsageStartedEvent) -> None:
+            # Its a tool call - add tool call to last AIMessage
+            if len(self.messages) == 0:
+                logging.warning("Direct tool usage without agent invocation")
+                return
+            last_message = self.messages[-1]
+            if not isinstance(last_message, AIMessage):
+                logging.warning(
+                    "Tool call must be preceded by an AIMessage somewhere in the conversation."
+                )
+                return
+            tool_call = ToolCall(name=event.tool_name, args=json.loads(event.tool_args))
+            last_message.tool_calls.append(tool_call)
+
+        @crewai_event_bus.on(ToolUsageFinishedEvent)  # type: ignore[misc]
+        def on_tool_usage_finished(_: Any, event: ToolUsageFinishedEvent) -> None:
+            if len(self.messages) == 0:
+                logging.warning("Direct tool usage without agent invocation")
+                return
+            last_message = self.messages[-1]
+            if not isinstance(last_message, AIMessage):
+                logging.warning(
+                    "Tool call must be preceded by an AIMessage somewhere in the conversation."
+                )
+                return
+            if not last_message.tool_calls:
+                logging.warning("No previous tool calls found")
+                return
+            self.messages.append(ToolMessage(content=event.output))
 
 
 class CustomModelChatResponse(ChatCompletion):
@@ -58,6 +125,7 @@ def create_inputs_from_completion_params(
 def create_completion_from_response_text(
     response_text: str,
     usage_metrics: Dict[str, int],
+    model: str,
     pipeline_interactions: MultiTurnSample | None = None,
 ) -> CustomModelChatResponse:
     """Convert the text of the LLM response into a chat completion response."""
@@ -74,7 +142,7 @@ def create_completion_from_response_text(
         object="chat.completion",
         choices=[choice],
         created=completion_timestamp,
-        model="MODEL_NAME",
+        model=model,
         usage=CompletionUsage(**usage_metrics),
         pipeline_interactions=pipeline_interactions.model_dump_json()
         if pipeline_interactions
@@ -84,7 +152,9 @@ def create_completion_from_response_text(
 
 
 def to_custom_model_response(
+    events: List[Union[HumanMessage, AIMessage, ToolMessage]] | None,
     crew_output: CrewOutput,
+    model: str,
 ) -> CustomModelChatResponse:
     """Convert the CrewAI agent output to a custom model response."""
     usage_metrics: Dict[str, int] = {
@@ -93,9 +163,13 @@ def to_custom_model_response(
         "total_tokens": crew_output.token_usage.total_tokens,
     }
 
+    pipeline_interactions = None
+    if events:
+        pipeline_interactions = MultiTurnSample(user_input=events)
     response = create_completion_from_response_text(
         response_text=str(crew_output.raw),
         usage_metrics=usage_metrics,
-        pipeline_interactions=None,
+        model=model,
+        pipeline_interactions=pipeline_interactions,
     )
     return response

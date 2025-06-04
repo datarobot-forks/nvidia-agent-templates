@@ -66,7 +66,7 @@ requires-dist = [
     { name = "crewai", marker = "extra == 'agents'", specifier = ">=0.117.1" },
     { name = "crewai-tools", marker = "extra == 'agents'", specifier = ">=0.43.0" },
     { name = "datarobot", specifier = ">=3.7.0" },
-    { name = "datarobot-drum", git = "https://github.com/datarobot/datarobot-user-models?subdirectory=custom_model_runner" },
+    { name = "datarobot-drum", specifier = ">=1.16.14" },
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "langchain", marker = "extra == 'agents'", specifier = ">=0.3.24" },
     { name = "langchain-community", marker = "extra == 'agents'", specifier = ">=0.3.23" },
@@ -1005,8 +1005,8 @@ wheels = [
 
 [[package]]
 name = "datarobot-drum"
-version = "1.16.13"
-source = { git = "https://github.com/datarobot/datarobot-user-models?subdirectory=custom_model_runner#189f3e4248d0dd0b7f05ec0c8a6079c614681561" }
+version = "1.16.14"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "argcomplete" },
     { name = "datarobot" },
@@ -1021,6 +1021,8 @@ dependencies = [
     { name = "numpy" },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-exporter-otlp-proto-http" },
+    { name = "opentelemetry-instrumentation-aiohttp-client" },
+    { name = "opentelemetry-instrumentation-requests" },
     { name = "opentelemetry-sdk" },
     { name = "packaging" },
     { name = "pandas" },
@@ -1035,6 +1037,9 @@ dependencies = [
     { name = "termcolor" },
     { name = "texttable" },
     { name = "trafaret" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ba/da/fc67294cc246ca532278e008b7b9075e0392af3fdfa7ba70bda93eb805a1/datarobot_drum-1.16.14-py3-none-any.whl", hash = "sha256:845dd24fd0594203c1a808054b397978683b7699380bc0aa84787039a76b1bcf", size = 10518145 },
 ]
 
 [[package]]

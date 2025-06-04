@@ -1,67 +1,41 @@
 ---
 name: Test agent_generic_base
-
 on:
   push:
     branches: ["main"]
     paths:
-      - 'agent_generic_base/**.py'
-      - 'agent_generic_base/**.yml'
-      - 'agent_generic_base/**.txt'
-      - 'agent_generic_base/**.sh'
-
+      - 'agent_generic_base/**'
   pull_request:
     branches: ["main"]
     paths:
-      - 'agent_generic_base/**.py'
-      - 'agent_generic_base/**.yml'
-      - 'agent_generic_base/**.txt'
-      - 'agent_generic_base/**.sh'
-
+      - 'agent_generic_base/**'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+defaults:
+  run:
+    working-directory: agent_generic_base
 jobs:
-  docker-build-test:
-    name: "Docker Build and Test"
-    runs-on: "ubuntu-latest"
-    defaults:
-      run:
-        working-directory: agent_generic_base/docker_context
-    steps:
-      - name: Checkout
-        uses: "actions/checkout@v4"
-      - name: Build Docker Image
-        run: docker build . -t agent_generic_base
-
   drum-cli-tests:
     name: "DRUM: agent cli ${{ matrix.python-version }}"
     runs-on: "ubuntu-latest"
-    defaults:
-      run:
-        working-directory: agent_generic_base
-
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
-
+        python-version: ["3.10", "3.11", "3.12"]
     steps:
       - uses: "actions/checkout@v4"
-
       # Ref: https://docs.astral.sh/uv/guides/integration/github/#installation
       - name: Setup uv
         uses: astral-sh/setup-uv@v6
         with:
-          working-directory: agent_generic_base
           enable-cache: true
           cache-dependency-glob: "uv.lock"
           python-version: ${{ matrix.python-version }}
-
       - name: Install Dependencies
-        working-directory: agent_generic_base
         run: |
           uv sync --all-extras
           uv pip install git+https://github.com/datarobot-forks/litellm@mattn/add-datarobot-support-to-litellm
-
       - name: Run cli test
-        working-directory: agent_generic_base
         run: |
           uv run cli.py execute --user_prompt '{"topic": "Artificial Intelligence"}'
           if uv run cli.py execute --user_prompt '{"topic": "Artificial Intelligence"}' | grep -q '"content": "success"'; then
@@ -70,48 +44,43 @@ jobs:
             echo "Test failed: cli.py did not return success"
             exit 1
           fi
-
+  docker-build-test:
+    name: "Agent: agent_generic_base Docker build and test"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Checkout
+        uses: "actions/checkout@v4"
+      - name: Build Docker Image
+        run: |
+          cd docker_context
+          docker build . -t agent_generic_base
   tests:
     name: "Agent: agent_generic_base ${{ matrix.python-version }}"
     runs-on: "ubuntu-latest"
-    defaults:
-      run:
-        working-directory: agent_generic_base
-
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
-
+        python-version: ["3.10", "3.11", "3.12"]
     steps:
       - uses: "actions/checkout@v4"
-
       # Ref: https://docs.astral.sh/uv/guides/integration/github/#installation
       - name: Setup uv
         uses: astral-sh/setup-uv@v6
         with:
-          working-directory: agent_generic_base
           enable-cache: true
           cache-dependency-glob: "uv.lock"
           python-version: ${{ matrix.python-version }}
-
       - name: Install Dependencies
-        working-directory: agent_generic_base
         run: |
           uv sync --all-extras --dev
-          uv pip install git+https://github.com/datarobot-forks/litellm@mattn/add-datarobot-support-to-litellm
+          uv pip install --no-cache-dir git+https://github.com/BerriAI/litellm@v1.72.1.dev1
           uv pip install -r ./custom_model/requirements.txt
-
       - name: Run Static Checks
-        working-directory: agent_generic_base
         run: |
           uv run ruff format --check .
           uv run ruff check .
           uv run mypy --pretty .
-
       - name: Test
-        working-directory: agent_generic_base
         run: uv run pytest --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml
-
       - name: Get Cover
         uses: orgoro/coverage@v3.2
         with:

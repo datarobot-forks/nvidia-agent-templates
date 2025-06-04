@@ -113,7 +113,7 @@ wheels = [
 
 [[package]]
 name = "datarobot-pulumi-utils"
-version = "0.0.2.post8"
+version = "0.0.2.post11"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "datarobot" },
@@ -122,9 +122,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/05/2d/9b1484b46a28d1eaa17fe4051b77de5b941a9985abf3570c1a8560a9b38e/datarobot_pulumi_utils-0.0.2.post8.tar.gz", hash = "sha256:fe963000c5fb78e99dd073dafc65b221c7dc4900b89c4604a12978b3caa35282", size = 23401 }
+sdist = { url = "https://files.pythonhosted.org/packages/28/79/0d3f5f89da2861ff10d1ffd3e68735fcf14c960eb6e6a481da2154b1d816/datarobot_pulumi_utils-0.0.2.post11.tar.gz", hash = "sha256:3b52d9d99316c9db89b468814a670705894d7e4261dcdd6c906ec03941362863", size = 23830 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/23/66/d36124018cf5f927577bfd4171cc5dd1e7baee054ab71f95f0f7a1083a34/datarobot_pulumi_utils-0.0.2.post8-py3-none-any.whl", hash = "sha256:e2805599b1b453aa09b6b7e6582270c512574723a7195b549ca50c3540bf812b", size = 33681 },
+    { url = "https://files.pythonhosted.org/packages/9f/1e/f8457cae43efbeeac60c6b4e7dd6f657df3c1ec0ca35e780d7ed0f2f5c9f/datarobot_pulumi_utils-0.0.2.post11-py3-none-any.whl", hash = "sha256:e5e6d5500bc3cf56b165655fd670a7947b49b0f8db0ebbd47c2f09a66284a0cf", size = 34754 },
 ]
 
 [[package]]
@@ -220,7 +220,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "datarobot-pulumi-utils", specifier = ">=0.0.2.post8" },
+    { name = "datarobot-pulumi-utils", specifier = ">=0.0.2.post11" },
     { name = "jinja2", specifier = ">=3.1.5,<4.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8.0" },
     { name = "pulumi", specifier = ">=3.162.0" },

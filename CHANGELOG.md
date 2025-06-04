@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.1.0
+- Changes to `run_agent.py`
+- Improve component testing
+- Add basic support for moderations helpers for agents
+- Ensure all taskfile commands are properly inherited from the `taskfile` template
+- Add descriptions and inheritance to all taskfile commands
+- Add quickstart functionality to the repository
+- Upgrade LiteLLM
+- Add datarobot-moderations package to requirements
+- Bump `datarobot-pulumi-utils`
+- Add `pyproject.toml` to the root to assist with quickstart and development
+- Allow agents to receive string or json gracefully
+- Ensure that environment variables are properly passed to LiteLLM with helper functions
+
 ## 0.0.6
 - Documentation and getting started rewritten and improved.
 - Add Taskfile improvements for development.

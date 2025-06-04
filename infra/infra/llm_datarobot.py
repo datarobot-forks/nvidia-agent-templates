@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 
 import datarobot as dr
 import pulumi
@@ -29,6 +30,11 @@ from datarobot_pulumi_utils.schema.llms import (
 from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
 
 from . import use_case
+
+# To use the LLM DataRobot Deployment please disable the LLM Gateway by setting the environment variable
+# Optionally, you may delete the check below if you ALWAYS want to deploy an LLM on DataRobot
+if os.environ.get("USE_DATAROBOT_LLM_GATEWAY") not in [0, "0", False, "false", "False"]:
+    exit()
 
 __all__ = [
     "llm_datarobot_application_name",
@@ -110,7 +116,7 @@ llm_deployment = CustomModelDeployment(
 app_runtime_parameters = [
     datarobot.ApplicationSourceRuntimeParameterValueArgs(
         key=llm_datarobot_application_name.upper() + "_DEPLOYMENT_ID",
-        type="deployment",
+        type="string",
         value=llm_deployment.id,
     ),
 ]

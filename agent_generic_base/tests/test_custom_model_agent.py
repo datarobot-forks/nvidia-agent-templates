@@ -15,8 +15,7 @@ import os
 from unittest.mock import patch
 
 import pytest
-
-from custom_model.agent import MyAgent
+from agent import MyAgent
 
 
 class TestMyAgentBase:
@@ -134,9 +133,77 @@ class TestMyAgentBase:
         with pytest.raises(AttributeError):
             _ = agent.extra_param1
 
-    def test_run_method(self, agent):
+    @patch("builtins.print")
+    def test_run_method_with_json_input(self, mock_print, agent):
         # Create a mock result with a raw attribute
-        assert agent.run({"topic": "Artificial Intelligence"}) == (
+        completion_create_params = {
+            "model": "test-model",
+            "messages": [
+                {"role": "user", "content": '{"topic": "Artificial Intelligence"}'}
+            ],
+            "environment_var": True,
+        }
+        assert agent.run(completion_create_params) == (
             "success",
             {"completion_tokens": 0, "prompt_tokens": 0, "total_tokens": 0},
         )
+
+        # Assert that print was called with "Has inputs"
+        mock_print.assert_called_with(
+            "Running agent with inputs:", {"topic": "Artificial Intelligence"}
+        )
+
+    @patch("builtins.print")
+    def test_run_method_with_string_input(self, mock_print, agent):
+        # Create a mock result with a raw attribute
+        completion_create_params = {
+            "model": "test-model",
+            "messages": [{"role": "user", "content": "Artificial Intelligence"}],
+            "environment_var": True,
+        }
+        result = agent.run(completion_create_params)
+        assert result == (
+            "success",
+            {"completion_tokens": 0, "prompt_tokens": 0, "total_tokens": 0},
+        )
+
+        # Assert that print was called with "Has inputs"
+        mock_print.assert_called_with(
+            "Running agent with inputs:", {"topic": "Artificial Intelligence"}
+        )
+
+    @pytest.mark.parametrize(
+        "api_base,expected_result",
+        [
+            ("https://example.com/api/v2/", "https://example.com/"),
+            ("https://example.com/api/v2", "https://example.com/"),
+            ("https://example.com/other-path", "https://example.com/other-path"),
+            (
+                "https://custom.example.com:8080/path/to/api/v2/",
+                "https://custom.example.com:8080/path/to/",
+            ),
+            (
+                "https://example.com/api/v2/deployment/",
+                "https://example.com/api/v2/deployment/",
+            ),
+            (
+                "https://example.com/api/v2/deployment",
+                "https://example.com/api/v2/deployment",
+            ),
+            (
+                "https://example.com/api/v2/genai/llmgw/chat/completions",
+                "https://example.com/api/v2/genai/llmgw/chat/completions",
+            ),
+            (
+                "https://example.com/api/v2/genai/llmgw/chat/completions/",
+                "https://example.com/api/v2/genai/llmgw/chat/completions/",
+            ),
+            (None, "https://api.datarobot.com"),
+        ],
+    )
+    def test_api_base_litellm_variations(self, api_base, expected_result):
+        """Test api_base_litellm property with various URL formats."""
+        with patch.dict(os.environ, {}, clear=True):
+            agent = MyAgent(api_base=api_base)
+            result = agent.api_base_litellm
+            assert result == expected_result

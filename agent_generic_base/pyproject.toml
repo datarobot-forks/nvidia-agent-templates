@@ -2,13 +2,13 @@
 
 name = "agent_generic_base"
 version = "0.1.0"
-description = "FastAPI Server"
+description = "Implementation of agent_generic_base"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "click>=8.1.8",
     "datarobot>=3.7.0",
-    "datarobot-drum",
+    "datarobot-drum>=1.16.14",
     "dotenv>=0.9.9",
     "legacy-cgi>=2.6.3",
     "openai>=1.76.2",
@@ -56,6 +56,7 @@ dev = [
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
+pythonpath = ["custom_model"]
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
@@ -172,6 +173,3 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 module = "datarobot.*"
 implicit_reexport = true
-
-[tool.uv.sources]
-datarobot-drum = { git = "https://github.com/datarobot/datarobot-user-models", subdirectory = "custom_model_runner" }

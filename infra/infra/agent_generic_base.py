@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 import re
+from typing import cast
 
 import datarobot as dr
 import pulumi
@@ -25,6 +26,9 @@ from datarobot_pulumi_utils.schema.custom_models import (
 )
 
 from . import project_dir, use_case
+
+# To use the LLM DataRobot Deployment in your Agent, uncomment the line below
+# from .llm_datarobot import app_runtime_parameters as llm_datarobot_app_runtime_parameters
 
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
@@ -62,7 +66,7 @@ agent_generic_base_application_path = project_dir.parent / "agent_generic_base"
 
 
 # Start of Pulumi settings and application infrastructure
-if "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT" in os.environ:
+if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
     agent_generic_base_execution_environment_id = os.environ[
         "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT"
     ]
@@ -88,20 +92,22 @@ else:
         use_cases=["customModel", "notebook"],
     )
 
-agent_generic_base_prediction_environment = pulumi_datarobot.PredictionEnvironment(
-    resource_name="Agent Prediction Environment " + agent_generic_base_resource_name,
-    platform=dr.enums.PredictionEnvironmentPlatform.DATAROBOT_SERVERLESS,
-)
-
 agent_generic_base_custom_model = pulumi_datarobot.CustomModel(
     resource_name="Agent Custom Model " + agent_generic_base_resource_name,
     base_environment_id=agent_generic_base_execution_environment.id,
+    base_environment_version_id=agent_generic_base_execution_environment.version_id,
     target_type=dr.TARGET_TYPE.TEXT_GENERATION,
     target_name="response",
     language="python",
     runtime_parameter_values=[],
+    # To use the LLM DataRobot Deployment in your Agent, uncomment the line below
+    # runtime_parameter_values=llm_datarobot_app_runtime_parameters,
     use_case_ids=[use_case.id],
     folder_path=os.path.join(str(agent_generic_base_application_path), "custom_model"),
+)
+
+agent_generic_base_custom_model_endpoint = agent_generic_base_custom_model.id.apply(
+    lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/genai/agents/fromCustomModel/{id}/chat/"
 )
 
 # Export the IDs of the created resources
@@ -114,10 +120,22 @@ pulumi.export(
     "Custom Model ID " + agent_generic_base_resource_name,
     agent_generic_base_custom_model.id,
 )
+pulumi.export(
+    "Custom Model Chat Endpoint " + agent_generic_base_resource_name,
+    agent_generic_base_custom_model_endpoint,
+)
 
 
-agent_generic_base_agent_deployment_id = "None"
-if os.environ.get("DEPLOY") != "0":
+agent_generic_base_agent_deployment_id: pulumi.Output[str] = cast(
+    pulumi.Output[str], "None"
+)
+if os.environ.get("AGENT_DEPLOY") != "0":
+    agent_generic_base_prediction_environment = pulumi_datarobot.PredictionEnvironment(
+        resource_name="Agent Prediction Environment "
+        + agent_generic_base_resource_name,
+        platform=dr.enums.PredictionEnvironmentPlatform.DATAROBOT_SERVERLESS,
+    )
+
     agent_generic_base_registered_model_args = RegisteredModelArgs(
         resource_name="Agent Registered Model " + agent_generic_base_resource_name,
     )
@@ -150,21 +168,26 @@ if os.environ.get("DEPLOY") != "0":
         registered_model_args=agent_generic_base_registered_model_args,
         deployment_args=agent_generic_base_deployment_args,
     )
-    agent_generic_base_agent_deployment_id = str(agent_generic_base_agent_deployment.id)
+    agent_generic_base_agent_deployment_id = (
+        agent_generic_base_agent_deployment.id.apply(lambda id: f"{id}")
+    )
+    agent_generic_base_deployment_endpoint = agent_generic_base_agent_deployment.id.apply(
+        lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/genai/agents/fromCustomModel/{id}/chat/"
+    )
 
     pulumi.export(
         "Agent Deployment ID " + agent_generic_base_resource_name,
         agent_generic_base_agent_deployment.id,
     )
     pulumi.export(
-        "Agent Chat Completion Endpoint " + agent_generic_base_resource_name,
-        f"{os.getenv('DATAROBOT_ENDPOINT')}/genai/agents/fromCustomModel/[Agent Deployment ID]/chat/",
+        "Agent Deployment Chat Endpoint " + agent_generic_base_resource_name,
+        agent_generic_base_deployment_endpoint,
     )
 
 agent_generic_base_app_runtime_parameters = [
     pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
         key=agent_generic_base_application_name.upper() + "_DEPLOYMENT_ID",
-        type="deployment",
+        type="string",
         value=agent_generic_base_agent_deployment_id,
     ),
 ]
