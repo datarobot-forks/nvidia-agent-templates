@@ -13,7 +13,7 @@
 # limitations under the License.
 import asyncio
 import os
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Optional, Sequence, Tuple, Union
 
 from helpers import create_inputs_from_completion_params
 from llama_index.core.agent.workflow import (
@@ -26,7 +26,7 @@ from llama_index.core.agent.workflow import (
     ToolCallResult,
 )
 from llama_index.core.base.llms.types import LLMMetadata
-from llama_index.core.workflow import Context
+from llama_index.core.workflow import Context, Event
 from llama_index.llms.litellm import LiteLLM
 from openai.types.chat import CompletionCreateParams
 
@@ -230,41 +230,44 @@ class MyAgent:
         handler = agent_workflow.run(user_msg=user_prompt)
 
         current_agent = None
+        events = []
         async for event in handler.stream_events():
+            events.append(event)
             if (
                 hasattr(event, "current_agent_name")
                 and event.current_agent_name != current_agent
             ):
                 current_agent = event.current_agent_name
-                print(f"\n{'=' * 50}")
-                print(f"🤖 Agent: {current_agent}")
-                print(f"{'=' * 50}\n")
+                print(f"\n{'=' * 50}", flush=True)
+                print(f"🤖 Agent: {current_agent}", flush=True)
+                print(f"{'=' * 50}\n", flush=True)
             if isinstance(event, AgentStream):
                 if event.delta:
                     print(event.delta, end="", flush=True)
             elif isinstance(event, AgentInput):
-                print("📥 Input:", event.input)
+                print("📥 Input:", event.input, flush=True)
             elif isinstance(event, AgentOutput):
                 if event.response.content:
-                    print("📤 Output:", event.response.content)
+                    print("📤 Output:", event.response.content, flush=True)
                 if event.tool_calls:
                     print(
                         "🛠️  Planning to use tools:",
                         [call.tool_name for call in event.tool_calls],
+                        flush=True,
                     )
             elif isinstance(event, ToolCallResult):
-                print(f"🔧 Tool Result ({event.tool_name}):")
-                print(f"  Arguments: {event.tool_kwargs}")
-                print(f"  Output: {event.tool_output}")
+                print(f"🔧 Tool Result ({event.tool_name}):", flush=True)
+                print(f"  Arguments: {event.tool_kwargs}", flush=True)
+                print(f"  Output: {event.tool_output}", flush=True)
             elif isinstance(event, ToolCall):
-                print(f"🔨 Calling Tool: {event.tool_name}")
-                print(f"  With arguments: {event.tool_kwargs}")
+                print(f"🔨 Calling Tool: {event.tool_name}", flush=True)
+                print(f"  With arguments: {event.tool_kwargs}", flush=True)
 
-        return await handler.ctx.get("state")  # type: ignore[union-attr]
+        return await handler.ctx.get("state"), events  # type: ignore[union-attr]
 
     def run(
         self, completion_create_params: CompletionCreateParams
-    ) -> Tuple[str, Dict[str, int]]:
+    ) -> Tuple[str, Sequence[Event], dict[str, int]]:
         """Run the agent with the provided completion parameters.
 
         [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
@@ -278,7 +281,7 @@ class MyAgent:
             completion_create_params (CompletionCreateParams): The parameters for
                 the completion request, which includes the input topic and other settings.
         Returns:
-            Tuple[list[Any], CrewOutput]: A tuple containing a list of messages (events) and the crew output.
+            tuple[list[Any], CrewOutput]: A tuple containing a list of messages (events) and the crew output.
 
         """
         # Example helper for extracting inputs as a json from the completion_create_params["messages"]
@@ -289,18 +292,19 @@ class MyAgent:
         if isinstance(inputs, str):
             inputs = {"topic": inputs}
 
-        print("Running agent with inputs:", inputs)
+        # Print commands may need flush=True to ensure they are displayed in real-time.
+        print("Running agent with inputs:", inputs, flush=True)
 
         user_prompt = (
             f"Write me a report on the {inputs['topic']}. "
             f"Briefly describe the history of {inputs['topic']}, important developments, "
             f"and the current state in the 21st century."
         )
-        result = asyncio.run(self.run_async(user_prompt))
+        result, events = asyncio.run(self.run_async(user_prompt))
 
-        usage_metrics: Dict[str, int] = {
+        usage_metrics: dict[str, int] = {
             "completion_tokens": 0,
             "prompt_tokens": 0,
             "total_tokens": 0,
         }
-        return str(result["report_content"]), usage_metrics
+        return str(result["report_content"]), events, usage_metrics

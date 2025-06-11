@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.1.1
+- Add support for `AgenticWorkflow` agent target type
+- Remove unused runtime parameter
+- Re-introduce moderation library
+- Add stdout log handling in ipykernel environments
+- Use UV override for correct LiteLLM version
+- Add end-to-end tests for agent execution
+- Fixes to tools
+- Address jupyter-core CVE
+- Support tracing
+- Improvements and fixes to environments
+- Documentation improvements
+
 ## 0.1.0
 - Changes to `run_agent.py`
 - Improve component testing

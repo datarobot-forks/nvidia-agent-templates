@@ -10,7 +10,7 @@ tasks:
           echo "OK: Changes detected."
           git status
           git add -A
-          git ci -m "Sync af-component-agent"
+          git commit -m "Sync af-component-agent"
         else
           echo "SKIPPING: No changes were detected."
         fi

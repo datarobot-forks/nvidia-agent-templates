@@ -13,7 +13,7 @@
 # limitations under the License.
 import json
 import os
-from typing import Any, Dict, Iterator, Optional, Union, cast
+from typing import Any, Iterator, Optional, Union, cast
 
 import datarobot as dr
 import openai
@@ -43,12 +43,25 @@ class ToolClient:
 
         Args:
             api_key (Optional[str]): API key for authentication. Defaults to environment variable `DATAROBOT_API_TOKEN`.
-            base_url (Optional[str]): Base URL for the DataRobot API. Defaults to environment variable `DATAROBOT_BASE_URL`.
+            base_url (Optional[str]): Base URL for the DataRobot API. Defaults to environment variable `DATAROBOT_ENDPOINT`.
         """
         self.api_key = api_key or os.getenv("DATAROBOT_API_TOKEN")
-        self.base_url = base_url or os.getenv(
-            "DATAROBOT_BASE_URL", "https://app.datarobot.com"
+        base_url = (
+            cast(
+                str,
+                (
+                    base_url
+                    or os.getenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com")
+                ),
+            )
+            .rstrip("/")
+            .removesuffix("/api/v2")
         )
+        self.base_url = base_url
+
+    @property
+    def datarobot_api_endpoint(self) -> str:
+        return self.base_url + "/api/v2"
 
     def get_deployment(self, deployment_id: str) -> dr.Deployment:
         """Retrieve a deployment by its ID.
@@ -59,26 +72,26 @@ class ToolClient:
         Returns:
             dr.Deployment: The deployment object.
         """
-        dr.Client(self.api_key, self.base_url)
+        dr.Client(self.api_key, self.datarobot_api_endpoint)
         return dr.Deployment.get(deployment_id=deployment_id)
 
-    def _get_authorization_context(self) -> Dict[str, Any]:
+    def _get_authorization_context(self) -> dict[str, Any]:
         """Retrieve the authorization context.
 
         Returns:
-            Dict[str, Any]: The authorization context.
+            dict[str, Any]: The authorization context.
         """
         authorization_context = get_authorization_context()
-        return cast(Dict[str, Any], authorization_context)
+        return cast(dict[str, Any], authorization_context)
 
     def call(
-        self, deployment_id: str, payload: Dict[str, Any], **kwargs: Any
+        self, deployment_id: str, payload: dict[str, Any], **kwargs: Any
     ) -> UnstructuredPredictionResult:
         """Run the custom model tool using score_unstructured hook.
 
         Args:
             deployment_id (str): The ID of the deployment.
-            payload (Dict[str, Any]): The input payload.
+            payload (dict[str, Any]): The input payload.
             **kwargs: Additional keyword arguments.
 
         Returns:

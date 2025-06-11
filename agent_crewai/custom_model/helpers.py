@@ -15,7 +15,7 @@ import json
 import logging
 import time
 import uuid
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 from crewai import CrewOutput
 from crewai.utilities.events import (
@@ -100,7 +100,7 @@ class CustomModelChatResponse(ChatCompletion):
 
 def create_inputs_from_completion_params(
     completion_create_params: CompletionCreateParams,
-) -> Union[Dict[str, Any], str]:
+) -> Union[dict[str, Any], str]:
     """Load the user prompt from a JSON string or file."""
     input_prompt: Any = next(
         (
@@ -124,7 +124,7 @@ def create_inputs_from_completion_params(
 
 def create_completion_from_response_text(
     response_text: str,
-    usage_metrics: Dict[str, int],
+    usage_metrics: dict[str, int],
     model: str,
     pipeline_interactions: MultiTurnSample | None = None,
 ) -> CustomModelChatResponse:
@@ -152,12 +152,12 @@ def create_completion_from_response_text(
 
 
 def to_custom_model_response(
-    events: List[Union[HumanMessage, AIMessage, ToolMessage]] | None,
+    events: list[Union[HumanMessage, AIMessage, ToolMessage]] | None,
     crew_output: CrewOutput,
     model: str,
 ) -> CustomModelChatResponse:
     """Convert the CrewAI agent output to a custom model response."""
-    usage_metrics: Dict[str, int] = {
+    usage_metrics: dict[str, int] = {
         "completion_tokens": crew_output.token_usage.completion_tokens,
         "prompt_tokens": crew_output.token_usage.prompt_tokens,
         "total_tokens": crew_output.token_usage.total_tokens,

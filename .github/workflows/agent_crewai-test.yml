@@ -25,7 +25,7 @@ jobs:
       - name: Build Docker Image
         run: |
           cd docker_context
-          docker build . -t agent_crewai
+          tar -czh . | docker build - -t agent_crewai
   tests:
     name: "Agent: agent_crewai ${{ matrix.python-version }}"
     runs-on: "ubuntu-latest"
@@ -44,7 +44,6 @@ jobs:
       - name: Install Dependencies
         run: |
           uv sync --all-extras --dev
-          uv pip install --no-cache-dir git+https://github.com/BerriAI/litellm@v1.72.1.dev1
           uv pip install -r ./custom_model/requirements.txt
       - name: Run Static Checks
         run: |

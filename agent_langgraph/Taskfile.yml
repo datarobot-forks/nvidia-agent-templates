@@ -7,9 +7,10 @@ tasks:
     cmds:
       - echo "Updating local dependencies"
       - uv sync --all-extras
-      - uv pip install --no-cache-dir git+https://github.com/BerriAI/litellm@v1.72.1.dev1
       - cd custom_model && uv pip install -r requirements.txt
     silent: true
+    aliases:
+      - install
   lint:
     desc: 🧹 [agent_langgraph] Lint the codebase
     cmds:
@@ -47,3 +48,12 @@ tasks:
       - echo "Running CLI {{.CLI_ARGS}}"
       - uv run cli.py {{.CLI_ARGS}}
     silent: true
+  dev:
+    desc: 🔨[agent_langgraph] Run the development server
+    env:
+      TARGET_NAME: response
+      FLASK_DEBUG: 1
+    cmds:
+      - echo "Running development server on http://localhost:8842"
+      - uv run drum server -cd custom_model --address localhost:8842 --target-type textgeneration
+      - wait

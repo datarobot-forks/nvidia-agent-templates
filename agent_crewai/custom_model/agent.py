@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 from crewai import LLM, Agent, Crew, CrewOutput, Task
 from helpers import CrewAIEventListener, create_inputs_from_completion_params
@@ -231,7 +231,7 @@ class MyAgent:
 
     def run(
         self, completion_create_params: CompletionCreateParams
-    ) -> Tuple[list[Any], CrewOutput]:
+    ) -> tuple[list[Any], CrewOutput]:
         """Run the agent with the provided completion parameters.
 
         [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
@@ -245,7 +245,7 @@ class MyAgent:
             completion_create_params (CompletionCreateParams): The parameters for
                 the completion request, which includes the input topic and other settings.
         Returns:
-            Tuple[list[Any], CrewOutput]: A tuple containing a list of messages (events) and the crew output.
+            tuple[list[Any], CrewOutput]: A tuple containing a list of messages (events) and the crew output.
 
         """
         # Example helper for extracting inputs as a json from the completion_create_params["messages"]
@@ -256,7 +256,8 @@ class MyAgent:
         if isinstance(inputs, str):
             inputs = {"topic": inputs}
 
-        print("Running agent with inputs:", inputs)
+        # Print commands may need flush=True to ensure they are displayed in real-time.
+        print("Running agent with inputs:", inputs, flush=True)
 
         # Run the crew with the inputs
         crew_output = self.crew().kickoff(inputs=inputs)

@@ -14,7 +14,7 @@
 import json
 import time
 import uuid
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 from openai.types import CompletionUsage
 from openai.types.chat import (
@@ -33,7 +33,7 @@ class CustomModelChatResponse(ChatCompletion):
 
 def create_inputs_from_completion_params(
     completion_create_params: CompletionCreateParams,
-) -> Union[Dict[str, Any], str]:
+) -> Union[dict[str, Any], str]:
     """Load the user prompt from a JSON string or file."""
     input_prompt: Any = next(
         (
@@ -57,7 +57,7 @@ def create_inputs_from_completion_params(
 
 def create_completion_from_response_text(
     response_text: str,
-    usage_metrics: Dict[str, int],
+    usage_metrics: dict[str, int],
     model: str,
     pipeline_interactions: MultiTurnSample | None = None,
 ) -> CustomModelChatResponse:
@@ -84,7 +84,7 @@ def create_completion_from_response_text(
     return completion
 
 
-def _extract_pipeline_interactions(events: List[dict[str, Any]]) -> MultiTurnSample:
+def _extract_pipeline_interactions(events: list[dict[str, Any]]) -> MultiTurnSample:
     """Extract the pipeline interactions from the events."""
     messages = []
     for e in events:
@@ -96,8 +96,8 @@ def _extract_pipeline_interactions(events: List[dict[str, Any]]) -> MultiTurnSam
 
 
 def to_custom_model_response(
-    events: List[dict[str, Any]],
-    usage_metrics: Dict[str, int],
+    events: list[dict[str, Any]],
+    usage_metrics: dict[str, int],
     model: str,
 ) -> CustomModelChatResponse:
     """Convert the Langgraph agent output to a custom model response."""
@@ -109,8 +109,6 @@ def to_custom_model_response(
         response_text=output,
         usage_metrics=usage_metrics,
         model=model,
-        # Disable until tests can be fixed
-        # pipeline_interactions=_extract_pipeline_interactions(events),
-        pipeline_interactions=None,
+        pipeline_interactions=_extract_pipeline_interactions(events),
     )
     return response

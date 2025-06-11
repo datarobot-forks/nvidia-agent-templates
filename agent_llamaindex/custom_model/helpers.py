@@ -14,7 +14,8 @@
 import json
 import time
 import uuid
-from typing import Any, Dict, Union
+from asyncio import Event
+from typing import Any, Sequence, Union
 
 from openai.types import CompletionUsage
 from openai.types.chat import (
@@ -24,6 +25,7 @@ from openai.types.chat import (
 )
 from openai.types.chat.chat_completion import Choice
 from ragas import MultiTurnSample
+from ragas.integrations.llama_index import convert_to_ragas_messages
 
 
 class CustomModelChatResponse(ChatCompletion):
@@ -32,7 +34,7 @@ class CustomModelChatResponse(ChatCompletion):
 
 def create_inputs_from_completion_params(
     completion_create_params: CompletionCreateParams,
-) -> Union[Dict[str, Any], str]:
+) -> Union[dict[str, Any], str]:
     """Load the user prompt from a JSON string or file."""
     input_prompt: Any = next(
         (
@@ -56,7 +58,7 @@ def create_inputs_from_completion_params(
 
 def create_completion_from_response_text(
     response_text: str,
-    usage_metrics: Dict[str, int],
+    usage_metrics: dict[str, int],
     model: str,
     pipeline_interactions: MultiTurnSample | None = None,
 ) -> CustomModelChatResponse:
@@ -85,14 +87,18 @@ def create_completion_from_response_text(
 
 def to_custom_model_response(
     agent_result: str,
-    usage_metrics: Dict[str, int],
+    events: Sequence[Event],
+    usage_metrics: dict[str, int],
     model: str,
 ) -> CustomModelChatResponse:
     """Convert the LLamaIndex agent output to a custom model response."""
+    ragas_trace = convert_to_ragas_messages(events)
+    pipeline_interactions = MultiTurnSample(user_input=ragas_trace)
+
     response = create_completion_from_response_text(
         response_text=agent_result,
         usage_metrics=usage_metrics,
         model=model,
-        pipeline_interactions=None,
+        pipeline_interactions=pipeline_interactions,
     )
     return response

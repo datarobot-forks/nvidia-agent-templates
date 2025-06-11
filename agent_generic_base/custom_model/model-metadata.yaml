@@ -1,11 +1,8 @@
 ---
 name: agent_generic_base
 type: inference
-targetType: textgeneration
+targetType: agenticworkflow
 runtimeParameterDefinitions:
-  - fieldName: OTEL_SDK_ENABLED
-    defaultValue: true
-    type: boolean
   - fieldName: LLM_DATAROBOT_DEPLOYMENT_ID
     defaultValue: SET_VIA_PULUMI_OR_MANUALLY
     type: string
