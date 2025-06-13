@@ -10,13 +10,14 @@ These templates support:
 
 ## Prerequisites
 
-Before getting started, ensure you have the following tools installed on your system. You can use `brew` (on macOS) or your preferred package manager:
+Before getting started, ensure you have the following tools installed on your system. You can use `brew` (on macOS) or your preferred package manager.
+Please ensure your local tools are at or above the minimum versions required.
 
-| Tool | Description | Installation guide |
-|------|-------------|-------------------|
-| **uv** | A Python package manager. | [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/) |
-| **Pulumi** | An Infrastructure as Code tool. | [Pulumi installation guide](https://www.pulumi.com/docs/iac/download-install/) |
-| **Taskfile** | A task runner. | [Taskfile installation guide](https://taskfile.dev/#/installation) |
+| Tool | Version | Description | Installation guide |
+|------|---------|-------------|-------------------|
+| **uv** | >= 0.6.10 | A Python package manager. | [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/) |
+| **Pulumi** | >= 3.163.0 | An Infrastructure as Code tool. | [Pulumi installation guide](https://www.pulumi.com/docs/iac/download-install/) |
+| **Taskfile** | >= 3.43.3 | A task runner. | [Taskfile installation guide](https://taskfile.dev/#/installation) |
 
 ## Available templates
 

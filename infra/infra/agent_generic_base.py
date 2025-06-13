@@ -24,24 +24,27 @@ from datarobot_pulumi_utils.schema.custom_models import (
     DeploymentArgs,
     RegisteredModelArgs,
 )
+from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
 
 from . import project_dir, use_case
 
 # To use the LLM DataRobot Deployment in your Agent, uncomment the line below
 # from .llm_datarobot import app_runtime_parameters as llm_datarobot_app_runtime_parameters
 
+DEFAULT_EXECUTION_ENVIRONMENT = "[DataRobot] Python 3.11 GenAI Agents"
+
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
     for pattern in [
-        r"tests.*",
-        r"\.coverage",
+        r".*tests/.*",
+        r".*\.coverage",
         r".*\.DS_Store",
         r".*\.pyc",
-        r"\.ruff_cache.*",
-        r"\.venv.*",
-        r"\.mypy_cache.*",
-        r"__pycache__.*",
-        r"\.pytest_cache.*",
+        r".*\.ruff_cache/.*",
+        r".*\.venv/.*",
+        r".*\.mypy_cache/.*",
+        r".*__pycache__/.*",
+        r".*\.pytest_cache/.*",
     ]
 ]
 
@@ -65,45 +68,84 @@ agent_generic_base_resource_name: str = "[agent_generic_base]"
 agent_generic_base_application_path = project_dir.parent / "agent_generic_base"
 
 
+def get_custom_model_files(custom_model_folder: str) -> list[tuple[str, str]]:
+    # Get all files from application path, following symlinks
+    # When we've upgraded to Python 3.13 we can use Path.glob(reduce_symlinks=True)
+    # https://docs.python.org/3.13/library/pathlib.html#pathlib.Path.glob
+    source_files = []
+    for dirpath, dirnames, filenames in os.walk(custom_model_folder, followlinks=True):
+        for filename in filenames:
+            file_path = os.path.join(dirpath, filename)
+            rel_path = os.path.relpath(file_path, custom_model_folder)
+            source_files.append((os.path.abspath(file_path), rel_path))
+    source_files = [
+        (file_path, file_name)
+        for file_path, file_name in source_files
+        if not any(
+            exclude_pattern.match(file_name) for exclude_pattern in EXCLUDE_PATTERNS
+        )
+    ]
+    return source_files
+
+
 # Start of Pulumi settings and application infrastructure
 if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
     agent_generic_base_execution_environment_id = os.environ[
         "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT"
     ]
-    pulumi.info(
-        "Using existing execution environment "
-        + agent_generic_base_execution_environment_id
-    )
-    agent_generic_base_execution_environment = (
-        pulumi_datarobot.ExecutionEnvironment.get(
-            id=agent_generic_base_execution_environment_id,
-            resource_name="Execution Environment [PRE-EXISTING] "
-            + agent_generic_base_resource_name,
+
+    if agent_generic_base_execution_environment_id == DEFAULT_EXECUTION_ENVIRONMENT:
+        pulumi.info(
+            "Using default GenAI Agents execution environment "
+            + agent_generic_base_execution_environment_id
         )
-    )
+        agent_generic_base_execution_environment = (
+            pulumi_datarobot.ExecutionEnvironment.get(
+                id=RuntimeEnvironments.PYTHON_311_GENAI_AGENTS.value.id,
+                resource_name="Execution Environment [PRE-EXISTING] "
+                + agent_generic_base_resource_name,
+            )
+        )
+    else:
+        pulumi.info(
+            "Using existing execution environment "
+            + agent_generic_base_execution_environment_id
+        )
+        agent_generic_base_execution_environment = (
+            pulumi_datarobot.ExecutionEnvironment.get(
+                id=agent_generic_base_execution_environment_id,
+                resource_name="Execution Environment [PRE-EXISTING] "
+                + agent_generic_base_resource_name,
+            )
+        )
 else:
     agent_generic_base_execution_environment = pulumi_datarobot.ExecutionEnvironment(
-        resource_name="Agent Python 3.11 " + agent_generic_base_resource_name,
+        resource_name="Execution Environment [docker_context] "
+        + agent_generic_base_resource_name,
         programming_language="python",
-        description="DataRobot Agent Execution Environment [Python 3.11]",
+        description="Execution Environment [agent docker_context]",
         docker_context_path=os.path.join(
             str(agent_generic_base_application_path), "docker_context"
         ),
         use_cases=["customModel", "notebook"],
     )
 
+agent_generic_base_custom_model_files = get_custom_model_files(
+    str(os.path.join(str(agent_generic_base_application_path), "custom_model"))
+)
+
 agent_generic_base_custom_model = pulumi_datarobot.CustomModel(
-    resource_name="Agent Custom Model " + agent_generic_base_resource_name,
+    resource_name="Custom Model " + agent_generic_base_resource_name,
     base_environment_id=agent_generic_base_execution_environment.id,
     base_environment_version_id=agent_generic_base_execution_environment.version_id,
     target_type="AgenticWorkflow",
     target_name="response",
     language="python",
-    runtime_parameter_values=[],
-    # To use the LLM DataRobot Deployment in your Agent, uncomment the line below
-    # runtime_parameter_values=llm_datarobot_app_runtime_parameters,
     use_case_ids=[use_case.id],
-    folder_path=os.path.join(str(agent_generic_base_application_path), "custom_model"),
+    files=agent_generic_base_custom_model_files,
+    runtime_parameter_values=[],
+    # To use the LLM DataRobot Deployment in your Agent, use the alternative parameter below
+    # runtime_parameter_values=llm_datarobot_app_runtime_parameters,
 )
 
 agent_generic_base_custom_model_endpoint = agent_generic_base_custom_model.id.apply(
@@ -111,17 +153,17 @@ agent_generic_base_custom_model_endpoint = agent_generic_base_custom_model.id.ap
 )
 
 # Export the IDs of the created resources
-pulumi.export("Use Case ID " + agent_generic_base_resource_name, use_case.id)
+pulumi.export("Agent Use Case ID " + agent_generic_base_resource_name, use_case.id)
 pulumi.export(
-    "Execution Environment ID " + agent_generic_base_resource_name,
+    "Agent Execution Environment ID " + agent_generic_base_resource_name,
     agent_generic_base_execution_environment.id,
 )
 pulumi.export(
-    "Custom Model ID " + agent_generic_base_resource_name,
+    "Agent Custom Model ID " + agent_generic_base_resource_name,
     agent_generic_base_custom_model.id,
 )
 pulumi.export(
-    "Custom Model Chat Endpoint " + agent_generic_base_resource_name,
+    "Agent Custom Model Chat Endpoint " + agent_generic_base_resource_name,
     agent_generic_base_custom_model_endpoint,
 )
 
@@ -131,18 +173,17 @@ agent_generic_base_agent_deployment_id: pulumi.Output[str] = cast(
 )
 if os.environ.get("AGENT_DEPLOY") != "0":
     agent_generic_base_prediction_environment = pulumi_datarobot.PredictionEnvironment(
-        resource_name="Agent Prediction Environment "
-        + agent_generic_base_resource_name,
+        resource_name="Prediction Environment " + agent_generic_base_resource_name,
         platform=dr.enums.PredictionEnvironmentPlatform.DATAROBOT_SERVERLESS,
     )
 
     agent_generic_base_registered_model_args = RegisteredModelArgs(
-        resource_name="Agent Registered Model " + agent_generic_base_resource_name,
+        resource_name="Registered Model " + agent_generic_base_resource_name,
     )
 
     agent_generic_base_deployment_args = DeploymentArgs(
-        resource_name="Agent Deployment " + agent_generic_base_resource_name,
-        label=f"Agent Deployment [{PROJECT_NAME}] " + agent_generic_base_resource_name,
+        resource_name="Deployment " + agent_generic_base_resource_name,
+        label=f"Deployment [{PROJECT_NAME}] " + agent_generic_base_resource_name,
         association_id_settings=pulumi_datarobot.DeploymentAssociationIdSettingsArgs(
             column_names=["association_id"],
             auto_generate_id=False,
@@ -161,7 +202,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
     )
 
     agent_generic_base_agent_deployment = CustomModelDeployment(
-        resource_name="Agent Chat Deployment " + agent_generic_base_resource_name,
+        resource_name="Chat Deployment " + agent_generic_base_resource_name,
         use_case_ids=[use_case.id],
         custom_model_version_id=agent_generic_base_custom_model.version_id,
         prediction_environment=agent_generic_base_prediction_environment,

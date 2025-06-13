@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.1.2
+- Add ability to send chat completion to CLI as complete json file
+- A default environment is now provided in the `.env.sample` and building from context is now optional, not required
+- Ignore temporary or build files when creating the `custom_model`
+- Renamed pulumi variables to be more concise and uniform
+- Remove deprecated clientId parameter everywhere from chat endpoints
+- Make DRUM server port retrieval dynamic
+- Switched target for dev server to `agenticworkflow`
+- Unpin chainguard base image to allow for latest updates
+- Ensure Llamaindex has a `GPT` model or tools don't work
+- Bump requests to fix the CVE
+
 ## 0.1.1
 - Add support for `AgenticWorkflow` agent target type
 - Remove unused runtime parameter

@@ -35,7 +35,7 @@ class AgentE2EHelper:
         self.repo_path = repo_path
 
     @staticmethod
-    def run_process(command, directory, input=None, timeout=180, env=None):
+    def run_process(command, directory, input=None, timeout=240, env=None):
         result = subprocess.check_output(
             command,
             env=env,
@@ -239,7 +239,7 @@ class AgentE2EHelper:
         print(agent_response)
 
     def run_deployment_execution(self, user_prompt: str, deployment_id: str):
-        print("Running local agent execution")
+        print("Running deployed agent execution")
         deployment_result = self.run_process(
             [
                 f'task agent:cli -- execute-deployment --user_prompt "{user_prompt}" --deployment_id {deployment_id}'

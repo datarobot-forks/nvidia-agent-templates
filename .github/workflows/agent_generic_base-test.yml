@@ -16,7 +16,7 @@ defaults:
   run:
     working-directory: agent_generic_base
 jobs:
-  drum-cli-tests:
+  drum-cli-tests-prompt:
     name: "DRUM: agent cli ${{ matrix.python-version }}"
     runs-on: "ubuntu-latest"
     strategy:
@@ -39,6 +39,34 @@ jobs:
         run: |
           uv run cli.py execute --user_prompt '{"topic": "Artificial Intelligence"}'
           if uv run cli.py execute --user_prompt '{"topic": "Artificial Intelligence"}' | grep -q '"content": "success"'; then
+            echo "Test passed: cli.py returned success"
+          else
+            echo "Test failed: cli.py did not return success"
+            exit 1
+          fi
+  drum-cli-tests-json:
+    name: "DRUM: agent cli ${{ matrix.python-version }}"
+    runs-on: "ubuntu-latest"
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: "actions/checkout@v4"
+      # Ref: https://docs.astral.sh/uv/guides/integration/github/#installation
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+          python-version: ${{ matrix.python-version }}
+      - name: Install Dependencies
+        run: |
+          uv sync --all-extras
+          uv pip install git+https://github.com/datarobot-forks/litellm@mattn/add-datarobot-support-to-litellm
+      - name: Run cli test
+        run: |
+          uv run cli.py execute --completion_json "example-completion.json"
+          if uv run cli.py execute --completion_json "example-completion.json" | grep -q '"content": "success"'; then
             echo "Test passed: cli.py returned success"
           else
             echo "Test failed: cli.py did not return success"
