@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.1.3
+- Add testing for pulumi infrastructure
+- Address protobuf CVE
+- Update function `api_base_litellm` with regex to handle different API base URLs
+
 ## 0.1.2
 - Add ability to send chat completion to CLI as complete json file
 - A default environment is now provided in the `.env.sample` and building from context is now optional, not required
