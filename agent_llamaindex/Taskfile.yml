@@ -2,7 +2,7 @@
 # https://taskfile.dev
 version: '3'
 tasks:
-  req:
+  install:
     desc: 🛠️ [agent_llamaindex] Update local dependencies
     cmds:
       - echo "Updating local dependencies"
@@ -10,7 +10,14 @@ tasks:
       - cd custom_model && uv pip install -r requirements.txt
     silent: true
     aliases:
-      - install
+      - req
+  update:
+    desc: 🛠️ [agent_llamaindex] Update local dependencies (refresh uv locks)
+    cmds:
+      - echo "Updating local dependencies"
+      - uv sync --all-extras -U
+      - cd custom_model && uv pip install -r requirements.txt
+    silent: true
   lint:
     desc: 🧹 [agent_llamaindex] Lint the codebase
     cmds:

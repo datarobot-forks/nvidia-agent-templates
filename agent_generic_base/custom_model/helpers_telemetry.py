@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor
+from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from opentelemetry.instrumentation.openai import OpenAIInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 
 instrument_requests = RequestsInstrumentor().instrument()
 instrument_aiohttp = AioHttpClientInstrumentor().instrument()
+instrument_httpx = HTTPXClientInstrumentor().instrument()
 instrument_openai = OpenAIInstrumentor().instrument()

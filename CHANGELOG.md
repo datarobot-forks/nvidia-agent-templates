@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.1.5
+- Update agent component with dependency fixes and pin packages.
+- Add DRUM serverless execution support using `--use_serverless` with the CLI.
+- Add UV lock files to the repo to prevent environment regressions by malformed packages
+- Fix toolmessage
+- Address critical CVE vulnerabilities in docker images
+- Add httpx tracing support to all frameworks
+
+## 0.1.4
+- Update packages to address issues in moderations and tracing.
+
 ## 0.1.3
 - Add testing for pulumi infrastructure
 - Address protobuf CVE

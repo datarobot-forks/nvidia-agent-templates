@@ -120,7 +120,7 @@ class MyAgent:
         # NOTE: LlamaIndex tool encodings are sensitive the the LLM model used and may need to be re-written
         # to work with different models. This example assumes the model is a GPT compatible model.
         return DataRobotLiteLLM(
-            model="datarobot/azure/gpt-4o",
+            model="datarobot/azure/gpt-4o-mini",
             api_base=self.api_base_litellm,
             api_key=self.api_key,
         )
@@ -138,13 +138,13 @@ class MyAgent:
         # NOTE: LlamaIndex tool encodings are sensitive the the LLM model used and may need to be re-written
         # to work with different models. This example assumes the model is a GPT compatible model.
         return DataRobotLiteLLM(
-            model="datarobot/azure/gpt-4o",
+            model="datarobot/azure/gpt-4o-mini",
             api_base=f"{self.api_base_litellm}/api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/",
             api_key=self.api_key,
         )
 
     @staticmethod
-    async def record_notes(ctx: Context, notes: str, notes_title: str) -> str:
+    async def record_notes(ctx: Context, notes: str, notes_title: str) -> str:  # type: ignore[type-arg]
         """Useful for recording notes on a given topic. Your input should be notes with a
         title to save the notes under."""
         current_state = await ctx.get("state")
@@ -155,7 +155,7 @@ class MyAgent:
         return "Notes recorded."
 
     @staticmethod
-    async def write_report(ctx: Context, report_content: str) -> str:
+    async def write_report(ctx: Context, report_content: str) -> str:  # type: ignore[type-arg]
         """Useful for writing a report on a given topic. Your input should be a markdown formatted report."""
         current_state = await ctx.get("state")
         current_state["report_content"] = report_content
@@ -163,7 +163,7 @@ class MyAgent:
         return "Report written."
 
     @staticmethod
-    async def review_report(ctx: Context, review: str) -> str:
+    async def review_report(ctx: Context, review: str) -> str:  # type: ignore[type-arg]
         """Useful for reviewing a report and providing feedback. Your input should be a review of the report."""
         current_state = await ctx.get("state")
         current_state["review"] = review

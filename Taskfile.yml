@@ -34,7 +34,7 @@ tasks:
     desc: "‼️ Quickstart for DataRobot Agent Templates ‼️"
     cmds:
       - uv run quickstart.py
-  req:
+  install:
     desc: "Install dependencies for all agent components and infra"
     cmds:
       - echo "Updating dependencies for all agents"
@@ -45,6 +45,22 @@ tasks:
       - echo "Updating infra dependencies"
       - cd ./infra && uv sync --all-extras
     silent: true
+    aliases:
+      - req
+      - install-all
+  update:
+    desc: "Update all dependencies for all agent components and infra (refresh uv locks)"
+    cmds:
+      - echo "Updating dependencies for all agents"
+      - task: agent_crewai:agent:update
+      - task: agent_generic_base:agent:update
+      - task: agent_langgraph:agent:update
+      - task: agent_llamaindex:agent:update
+      - echo "Updating infra dependencies"
+      - cd ./infra && uv sync --all-extras -U
+    silent: true
+    aliases:
+      - update-all
   lint:
     desc: "Lint all agent components and infra"
     cmds:
