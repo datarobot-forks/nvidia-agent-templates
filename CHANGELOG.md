@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.1.6
+- Update documentation to explain adding packages to the execution environment and custom models.
+- Update moderations-lib to the latest revision.
+- Add `ENABLE_LLM_GATEWAY_INFERENCE` default runtime param to custom models.
+- Cleanup quickstart.py after running repo quickstart.
+- Disable hidden remote tracing for all frameworks by default.
+- Remove overrides for litellm version and update crewai to use the latest version.
+- Add CLI support for running custom models with `execute-custom-model` command.
+- Remove `RELEASE.yaml` with quickstart.py.
+- Show a more condensed error on output file missing in CLI to reduce confusion.
+
 ## 0.1.5
 - Update agent component with dependency fixes and pin packages.
 - Add DRUM serverless execution support using `--use_serverless` with the CLI.

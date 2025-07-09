@@ -9,9 +9,6 @@ resolution-markers = [
     "python_full_version < '3.11'",
 ]
 
-[manifest]
-overrides = [{ name = "litellm", specifier = ">=1.72.1" }]
-
 [[package]]
 name = "absl-py"
 version = "2.3.0"
@@ -39,6 +36,7 @@ dependencies = [
     { name = "langgraph" },
     { name = "langgraph-prebuilt" },
     { name = "legacy-cgi" },
+    { name = "litellm" },
     { name = "llama-index" },
     { name = "llama-index-llms-langchain" },
     { name = "llama-index-llms-litellm" },
@@ -82,13 +80,14 @@ requires-dist = [
     { name = "datarobot", specifier = "~=3.7.0" },
     { name = "datarobot-drum", specifier = "~=1.16.18" },
     { name = "datarobot-mlops", specifier = "~=11.1.0" },
-    { name = "datarobot-moderations", specifier = "~=11.1.18" },
+    { name = "datarobot-moderations", specifier = "~=11.1.19" },
     { name = "dotenv", specifier = "~=0.9.9" },
     { name = "langchain", specifier = "~=0.3.23" },
     { name = "langchain-community", specifier = "~=0.3.23" },
     { name = "langgraph", specifier = "~=0.4.10" },
     { name = "langgraph-prebuilt", specifier = "~=0.2.3" },
     { name = "legacy-cgi", specifier = "~=2.6.3" },
+    { name = "litellm", specifier = ">=1.72.1" },
     { name = "llama-index", specifier = "~=0.12.33" },
     { name = "llama-index-llms-langchain", specifier = "~=0.6.1" },
     { name = "llama-index-llms-litellm", specifier = "~=0.4.1" },
@@ -424,22 +423,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/5a/b0/1367933a8532ee6ff8d63537de4f1177af4bff9f3e829baf7331f595bb24/attrs-25.3.0.tar.gz", hash = "sha256:75d7cefc7fb576747b2c81b4442d4d4a1ce0900973527c011d1030fd3bf4af1b", size = 812032 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/77/06/bb80f5f86020c4551da315d78b3ab75e8228f89f0162f2c3a819e407941a/attrs-25.3.0-py3-none-any.whl", hash = "sha256:427318ce031701fea540783410126f03899a97ffc6f61596ad581ac2e40e3bc3", size = 63815 },
-]
-
-[[package]]
-name = "auth0-python"
-version = "4.10.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "aiohttp" },
-    { name = "cryptography" },
-    { name = "pyjwt" },
-    { name = "requests" },
-    { name = "urllib3" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/b1/e3/68d004f82771f7b8e5a1bdcf4334a06fdd86c975471e30101c4c0f1a0bcd/auth0_python-4.10.0.tar.gz", hash = "sha256:fca0f29cd32618803b59a940041ee78c6304de9ab5a02cd7863f82951affdee6", size = 74755 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/67/e4/485d49a296fbd73d5fa33e97ddf9decf6f3d8d0c52a12df466adbf9b2590/auth0_python-4.10.0-py3-none-any.whl", hash = "sha256:c005cebbbe66bbfaa593353be76d7c9d52dc41fcb9680f815067496d5f3a9968", size = 138788 },
 ]
 
 [[package]]
@@ -1038,11 +1021,10 @@ toml = [
 
 [[package]]
 name = "crewai"
-version = "0.134.0"
+version = "0.140.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "appdirs" },
-    { name = "auth0-python" },
     { name = "blinker" },
     { name = "chromadb" },
     { name = "click" },
@@ -1059,6 +1041,7 @@ dependencies = [
     { name = "opentelemetry-sdk" },
     { name = "pdfplumber" },
     { name = "pydantic" },
+    { name = "pyjwt" },
     { name = "python-dotenv" },
     { name = "pyvis" },
     { name = "regex" },
@@ -1067,9 +1050,9 @@ dependencies = [
     { name = "tomli-w" },
     { name = "uv" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/86/b2/297191f17dddcb183ffc7169ef0e608688d2f0e70d0db00a926afe5a7820/crewai-0.134.0.tar.gz", hash = "sha256:52cf3dd975a25050838b2270615f5eb91ed72aa032623a35e9e4daa75fb39c4d", size = 5874341 }
+sdist = { url = "https://files.pythonhosted.org/packages/cb/95/93e7aaacf76ea9ce39522273794d1cfb1e1b270db0cbb52fe74bdb1af193/crewai-0.140.0.tar.gz", hash = "sha256:1eba7547464ab7d2515d77deb5ad3eea0a5afc1d7c722f790b2f88a6f7205128", size = 6189960 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/48/91/2ddfbebb4e1c440d83b5041554f897b3679083f015e801facee99a8841e8/crewai-0.134.0-py3-none-any.whl", hash = "sha256:89f102e1ce3e817bdd1ad829bca279b00247fd09e9e0ce0e26e61f267fd8d7d2", size = 327147 },
+    { url = "https://files.pythonhosted.org/packages/05/de/b823282c40146de09ad4c9c7d630675485a50b63a6210447ee59ecc40aa3/crewai-0.140.0-py3-none-any.whl", hash = "sha256:0d220839b385e55d72e25ad27c84227a86977f2621da9fd424de9960ccfdc687", size = 335917 },
 ]
 
 [[package]]
@@ -1235,7 +1218,7 @@ wheels = [
 
 [[package]]
 name = "datarobot-moderations"
-version = "11.1.18"
+version = "11.1.19"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -1267,7 +1250,7 @@ dependencies = [
     { name = "trafaret" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b1/e9/8f8677e7f52cdf3a49ad5d64c15d64c39c09b4f21ee695e2661d14f14dd3/datarobot_moderations-11.1.18-py3-none-any.whl", hash = "sha256:5ef550307c3817871a9b18ee618d44d829143291d541b865d9f897e6f0f2f4a3", size = 64480 },
+    { url = "https://files.pythonhosted.org/packages/f9/f8/3015956e6170c80c3585f1ec2d2a2cd65e54167a028bf75ffaa75fb06229/datarobot_moderations-11.1.19-py3-none-any.whl", hash = "sha256:684408fdfd9e83438003db1ad1495e10898a170130594a81ed32d37041e1a1aa", size = 64485 },
 ]
 
 [[package]]
@@ -1542,7 +1525,7 @@ name = "exceptiongroup"
 version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0b/9f/a65090624ecf468cdca03533906e7c69ed7588582240cfe7cc9e770b50eb/exceptiongroup-1.3.0.tar.gz", hash = "sha256:b241f5885f560bc56a59ee63ca4c6a8bfa46ae4ad651af316d4e81817bb9fd88", size = 29749 }
 wheels = [
@@ -2661,11 +2644,11 @@ wheels = [
 
 [[package]]
 name = "json-repair"
-version = "0.47.5"
+version = "0.25.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c6/7f/f855e54df8635bfcb62c85db0a75116e4c6b098c60bb342c332464bfbe10/json_repair-0.47.5.tar.gz", hash = "sha256:13a05e21a1143ecb1010067dce46680595c815e202d5819975dd1070ee0dbcb2", size = 34180 }
+sdist = { url = "https://files.pythonhosted.org/packages/66/cb/50b0bbc3e504ef875aea0062cdc108077e4923fb8c1209c70c80dc043933/json_repair-0.25.2.tar.gz", hash = "sha256:161a56d7e6bbfd4cad3a614087e3e0dbd0e10d402dd20dc7db418432428cb32b", size = 20458 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e2/16/8834ab815fa31c6c0ee4b50d49df1a6e102eeb8b73f8954a7dfc7eb4644d/json_repair-0.47.5-py3-none-any.whl", hash = "sha256:30b56019b7e30ae109ca411c3588b8d6951bbfe266b7ba29513bae8a0ab9eb36", size = 25654 },
+    { url = "https://files.pythonhosted.org/packages/aa/43/ac6691c7b5aa7191c964a04ae926d2bb06d9297dba1f2287df5b85cb3715/json_repair-0.25.2-py3-none-any.whl", hash = "sha256:51d67295c3184b6c41a3572689661c6128cef6cfc9fb04db63130709adfc5bf0", size = 12740 },
 ]
 
 [[package]]
@@ -3041,7 +3024,7 @@ wheels = [
 
 [[package]]
 name = "litellm"
-version = "1.73.6"
+version = "1.72.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -3056,9 +3039,9 @@ dependencies = [
     { name = "tiktoken" },
     { name = "tokenizers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/26/58/1a8ecf64b9a1f01dbddc123200f3156638c919fc3de683bd206235ccd33c/litellm-1.73.6.tar.gz", hash = "sha256:072ff9225aaa9caafe0fa9782df0ba4c93f893791cc55dd5ed218a401e788e88", size = 8750656 }
+sdist = { url = "https://files.pythonhosted.org/packages/8d/15/df75f278fd998f6d6900f692b9de2fba2814b316c123c99072a813668aac/litellm-1.72.6.tar.gz", hash = "sha256:4e5c7e4273b09b765302d2faaec30f77b42255c0055b427b55ea02b8092b8582", size = 8393603 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/81/be/3e9a3097c3b25bd1bc24073afdf5e6316120d8f4127e38bd6dcc3e193f55/litellm-1.73.6-py3-none-any.whl", hash = "sha256:98b3c7f436e6521e280f98faf9bad06c4c76d6a1678db2b370ffa175c206d288", size = 8467603 },
+    { url = "https://files.pythonhosted.org/packages/96/c9/4aae0b77632279eef9716dbcb98edd8b36c08a9da070e2470ca9c410c0f8/litellm-1.72.6-py3-none-any.whl", hash = "sha256:e0ae98d25db4910e78b1a0a604f24c0d6875f6cdea02426b264a45d4fbdb8c46", size = 8302810 },
 ]
 
 [[package]]

@@ -86,6 +86,52 @@ def remove_agent_environment(agent_name: str):
         print(f"No existing agent environment found at: {agent_env_path}")
 
 
+def remove_global_environment_files():
+    """
+    Removes global environment files such as the .git directory and quickstart.py,
+    then initializes a new git repository in the work directory.
+    """
+    # Remove .git directory
+    # try:
+    #     shutil.rmtree(str(work_dir / ".git"))
+    #     print("Removed existing .git directory")
+    # except Exception as e:
+    #     print(f"Warning: Could not remove .git directory: {e}")
+
+    # Remove quickstart.py file
+    try:
+        os.remove(str(work_dir / "quickstart.py"))
+        print("Removed quickstart.py file")
+    except FileNotFoundError:
+        print("Warning: quickstart.py file not found, skipping removal")
+    except PermissionError:
+        print("Warning: Permission denied when trying to remove quickstart.py")
+    except Exception as e:
+        print(f"Warning: Could not remove quickstart.py: {e}")
+
+    # Remove RELEASE.yaml file
+    try:
+        os.remove(str(work_dir / "RELEASE.yaml"))
+        print("Removed RELEASE.yaml file")
+    except FileNotFoundError:
+        print("Warning: RELEASE.yaml file not found, skipping removal")
+    except PermissionError:
+        print("Warning: Permission denied when trying to remove RELEASE.yaml")
+    except Exception as e:
+        print(f"Warning: Could not remove RELEASE.yaml: {e}")
+
+    # Initialize a new git repository
+    # try:
+    #     subprocess.run(["git", "init"], cwd=work_dir, check=True)
+    #     print("Initialized new git repository")
+    # except subprocess.CalledProcessError as e:
+    #     print(f"Warning: Failed to initialize git repository: {e}")
+    # except FileNotFoundError:
+    #     print("Warning: Git is not installed or not found in PATH")
+    # except Exception as e:
+    #     print(f"Warning: Could not initialize git repository: {e}")
+
+
 def create_new_taskfile(agent_name: str):
     """Create a new Taskfile for the selected agent."""
     taskfile_path = work_dir / "Taskfile.yml"
@@ -144,6 +190,7 @@ def main():
         for agent in agent_templates_to_remove:
             remove_agent_environment(agent)
         create_new_taskfile(template_name)
+        remove_global_environment_files()
 
         print("\nPlease run the following command for a list of actions:")
         print("task")
