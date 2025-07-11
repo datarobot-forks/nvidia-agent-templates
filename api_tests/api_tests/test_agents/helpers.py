@@ -252,9 +252,9 @@ class AgentE2EHelper:
 
         outputs = deployment_result.split("\n")
         assert "Running CLI execute-deployment" in outputs[0]
-        assert len(outputs[4].split(", ")) > 10
-        assert outputs[4].split(", ")[1] == "choices=[Choice(finish_reason='stop'"
-        assert outputs[4].split(", ")[2] == "index=0"
+        assert len(outputs[5].split(", ")) > 10
+        assert outputs[5].split(", ")[1] == "choices=[Choice(finish_reason='stop'"
+        assert outputs[5].split(", ")[2] == "index=0"
 
         print("Valid agent response:")
         print(deployment_result)

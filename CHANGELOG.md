@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.1.7
+- Critical bug fix to remove asyncio from docker containers due to new python versions being incompatible with outdated packages.
+
 ## 0.1.6
 - Update documentation to explain adding packages to the execution environment and custom models.
 - Update moderations-lib to the latest revision.
