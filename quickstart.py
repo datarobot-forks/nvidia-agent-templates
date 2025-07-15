@@ -17,6 +17,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import Union
 
 if sys.version_info[0] < 3 or (sys.version_info[0] >= 3 and sys.version_info[1] < 10):
     print("Must be using Python version 3.10 or higher")
@@ -71,16 +72,27 @@ def check_uv_installed():
         exit(1)
 
 
+def try_to_remove(path: Union[str, Path]):
+    """Attempt to remove a file or directory, ignoring errors."""
+    try:
+        if os.path.isdir(str(path)):
+            shutil.rmtree(str(path), ignore_errors=True)
+        else:
+            os.remove(str(path))
+    except Exception as e:
+        print(f"Warning: Could not remove {path}: {e}")
+
+
 def remove_agent_environment(agent_name: str):
     """Remove the agent environment if it exists."""
     agent_env_path = work_dir / f"{agent_name}"
     if agent_env_path.exists():
         print(f"Removing existing agent environment: {agent_env_path}")
-        shutil.rmtree(str(agent_env_path), ignore_errors=True)
-        os.remove(str(work_dir / ".github" / "workflows" / f"{agent_name}-test.yml"))
-        os.remove(str(work_dir / ".datarobot" / "answers" / f"agent-{agent_name}.yml"))
-        os.remove(str(work_dir / "infra" / "infra" / f"{agent_name}.py"))
-        os.remove(str(work_dir / f"Taskfile_{agent_name}.yml"))
+        try_to_remove(str(agent_env_path))
+        try_to_remove(str(work_dir / ".github" / "workflows" / f"{agent_name}-test.yml"))
+        try_to_remove(str(work_dir / ".datarobot" / "answers" / f"agent-{agent_name}.yml"))
+        try_to_remove(str(work_dir / "infra" / "infra" / f"{agent_name}.py"))
+        try_to_remove(str(work_dir / f"Taskfile_{agent_name}.yml"))
         print(f"Removed agent environment: {agent_env_path}")
     else:
         print(f"No existing agent environment found at: {agent_env_path}")
@@ -99,26 +111,10 @@ def remove_global_environment_files():
     #     print(f"Warning: Could not remove .git directory: {e}")
 
     # Remove quickstart.py file
-    try:
-        os.remove(str(work_dir / "quickstart.py"))
-        print("Removed quickstart.py file")
-    except FileNotFoundError:
-        print("Warning: quickstart.py file not found, skipping removal")
-    except PermissionError:
-        print("Warning: Permission denied when trying to remove quickstart.py")
-    except Exception as e:
-        print(f"Warning: Could not remove quickstart.py: {e}")
+    try_to_remove(str(work_dir / "quickstart.py"))
 
     # Remove RELEASE.yaml file
-    try:
-        os.remove(str(work_dir / "RELEASE.yaml"))
-        print("Removed RELEASE.yaml file")
-    except FileNotFoundError:
-        print("Warning: RELEASE.yaml file not found, skipping removal")
-    except PermissionError:
-        print("Warning: Permission denied when trying to remove RELEASE.yaml")
-    except Exception as e:
-        print(f"Warning: Could not remove RELEASE.yaml: {e}")
+    try_to_remove(str(work_dir / "RELEASE.yaml"))
 
     # Initialize a new git repository
     # try:
