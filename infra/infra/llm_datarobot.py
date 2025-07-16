@@ -34,7 +34,11 @@ from . import use_case
 # To use the LLM DataRobot Deployment please disable the LLM Gateway by setting the environment variable
 # Optionally, you may delete the check below if you ALWAYS want to deploy an LLM on DataRobot
 if os.environ.get("USE_DATAROBOT_LLM_GATEWAY") not in [0, "0", False, "false", "False"]:
-    exit()
+    # Skip this module if the condition is not met
+    raise pulumi.RunError(
+        "If you are using the LLM Gateway please delete infra/llm_datarobot.py.\n"
+        "Example: `rm infra/infra/llm_datarobot.py`\n"
+    )
 
 __all__ = [
     "llm_datarobot_application_name",

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.1.9
+- Raise informative error instead of exit to make pulumi more stable on linux distributions.
+
+## 0.1.8
+- Critical fix to public repo when files are missing during quickstart. Should raise warnings instead of errors now.
+
 ## 0.1.7
 - Critical bug fix to remove asyncio from docker containers due to new python versions being incompatible with outdated packages.
 
