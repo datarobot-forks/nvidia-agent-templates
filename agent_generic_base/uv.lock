@@ -26,13 +26,14 @@ dependencies = [
     { name = "click" },
     { name = "crewai" },
     { name = "crewai-tools" },
-    { name = "datarobot" },
+    { name = "datarobot", extra = ["auth"] },
     { name = "datarobot-drum" },
     { name = "datarobot-mlops" },
     { name = "datarobot-moderations" },
     { name = "dotenv" },
     { name = "langchain" },
     { name = "langchain-community" },
+    { name = "langchain-mcp-adapters" },
     { name = "langgraph" },
     { name = "langgraph-prebuilt" },
     { name = "legacy-cgi" },
@@ -42,6 +43,7 @@ dependencies = [
     { name = "llama-index-llms-langchain" },
     { name = "llama-index-llms-litellm" },
     { name = "llama-index-llms-openai" },
+    { name = "mcp" },
     { name = "multidict" },
     { name = "onnxruntime" },
     { name = "openai" },
@@ -78,13 +80,14 @@ requires-dist = [
     { name = "click", specifier = "~=8.1.8" },
     { name = "crewai", specifier = ">=0.140.0" },
     { name = "crewai-tools", specifier = ">=0.48.0" },
-    { name = "datarobot", specifier = ">=3.7.0" },
+    { name = "datarobot", extras = ["auth"], specifier = ">=3.8.1" },
     { name = "datarobot-drum", specifier = ">=1.16.19" },
     { name = "datarobot-mlops", specifier = ">=11.1.0" },
-    { name = "datarobot-moderations", specifier = ">=11.1.19" },
+    { name = "datarobot-moderations", specifier = ">=11.2.0" },
     { name = "dotenv", specifier = "~=0.9.9" },
     { name = "langchain", specifier = "~=0.3.23" },
     { name = "langchain-community", specifier = "~=0.3.23" },
+    { name = "langchain-mcp-adapters", specifier = "~=0.1.9" },
     { name = "langgraph", specifier = "~=0.4.10" },
     { name = "langgraph-prebuilt", specifier = "~=0.2.3" },
     { name = "legacy-cgi", specifier = "~=2.6.3" },
@@ -94,6 +97,7 @@ requires-dist = [
     { name = "llama-index-llms-langchain", specifier = "~=0.6.1" },
     { name = "llama-index-llms-litellm", specifier = "~=0.4.1" },
     { name = "llama-index-llms-openai", specifier = "~=0.3.38" },
+    { name = "mcp", specifier = "~=1.11.0" },
     { name = "multidict", specifier = "~=6.5.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = "~=1.15.0" },
     { name = "onnxruntime", specifier = "~=1.22.0" },
@@ -408,15 +412,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/87/d6/21b30a550dafea84b1b8eee21b5e23fa16d010ae006011221f33dcd8d7f8/async-timeout-4.0.3.tar.gz", hash = "sha256:4640d96be84d82d02ed59ea2b7105a0f7b33abe8703703cd0ab0bf87c427522f", size = 8345 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a7/fa/e01228c2938de91d47b307831c62ab9e4001e747789d0b05baf779a6488c/async_timeout-4.0.3-py3-none-any.whl", hash = "sha256:7405140ff1230c310e51dc27b3145b9092d659ce68ff733fb0cefe3ee42be028", size = 5721 },
-]
-
-[[package]]
-name = "asyncio"
-version = "3.4.3"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/da/54/054bafaf2c0fb8473d423743e191fcdf49b2c1fd5e9af3524efbe097bafd/asyncio-3.4.3.tar.gz", hash = "sha256:83360ff8bc97980e4ff25c964c7bd3923d333d177aa4f7fb736b019f26c7cb41", size = 204411 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/22/74/07679c5b9f98a7cb0fc147b1ef1cc1853bc07a4eb9cb5731e24732c5f773/asyncio-3.4.3-py3-none-any.whl", hash = "sha256:c4d18b22701821de07bd6aea8b53d21449ec0ec5680645e5317062ea21817d2d", size = 101767 },
 ]
 
 [[package]]
@@ -1143,7 +1138,7 @@ wheels = [
 
 [[package]]
 name = "datarobot"
-version = "3.7.1"
+version = "3.8.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "mypy-extensions" },
@@ -1158,9 +1153,15 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8f/a8/f9f0b8352c0e095a355dfe6db02577acaacaf6ac0d6e162fb90342a00bca/datarobot-3.7.1.tar.gz", hash = "sha256:2c3a7f923bf18c48d38bc242ead2888270fcdda047b5ef4c1da947d431d8b981", size = 671856 }
+sdist = { url = "https://files.pythonhosted.org/packages/69/12/325bf553f71d56772631ebf0c636df8e92ecc5679f474b3210410c6ce97e/datarobot-3.8.2.tar.gz", hash = "sha256:299eac73dbda44913916f103181358132ec29332d9d981ce5c9d42f4f00d3737", size = 716770 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4e/f2/d2e8af6f5b267ce76eaf7443d9c6f28978e2e67f7a44a806ee09884613d3/datarobot-3.7.1-py3-none-any.whl", hash = "sha256:6e5ad2fd0ffd83aec1a2154be791826a96cbc292babd231b2a7c40e9cd35046e", size = 708470 },
+    { url = "https://files.pythonhosted.org/packages/25/6f/495742af3b66c202994d013eb80d96d5c3b85d5519ff8cb169bd1e5a5629/datarobot-3.8.2-py3-none-any.whl", hash = "sha256:85b07d407e1f5b14f12c3895c2fb6b51aa0d514cfa46d417bd0e102ebd885540", size = 769003 },
+]
+
+[package.optional-dependencies]
+auth = [
+    { name = "httpx" },
+    { name = "pydantic" },
 ]
 
 [[package]]
@@ -1221,11 +1222,10 @@ wheels = [
 
 [[package]]
 name = "datarobot-moderations"
-version = "11.1.19"
+version = "11.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
-    { name = "asyncio" },
     { name = "backoff" },
     { name = "datarobot" },
     { name = "datarobot-predict" },
@@ -1253,7 +1253,7 @@ dependencies = [
     { name = "trafaret" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f9/f8/3015956e6170c80c3585f1ec2d2a2cd65e54167a028bf75ffaa75fb06229/datarobot_moderations-11.1.19-py3-none-any.whl", hash = "sha256:684408fdfd9e83438003db1ad1495e10898a170130594a81ed32d37041e1a1aa", size = 64485 },
+    { url = "https://files.pythonhosted.org/packages/9e/d4/b3d65529a2be6e19e48596e32f9d916a8565c19d34c91cf1ba460226aab1/datarobot_moderations-11.2.0-py3-none-any.whl", hash = "sha256:989247f76e54470a94f6c0f214b80a7f682fa81054bd971f83b9e302fcced543", size = 65596 },
 ]
 
 [[package]]
@@ -1528,7 +1528,7 @@ name = "exceptiongroup"
 version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0b/9f/a65090624ecf468cdca03533906e7c69ed7588582240cfe7cc9e770b50eb/exceptiongroup-1.3.0.tar.gz", hash = "sha256:b241f5885f560bc56a59ee63ca4c6a8bfa46ae4ad651af316d4e81817bb9fd88", size = 29749 }
 wheels = [
@@ -2894,6 +2894,20 @@ wheels = [
 ]
 
 [[package]]
+name = "langchain-mcp-adapters"
+version = "0.1.9"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "langchain-core" },
+    { name = "mcp" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b9/74/e36003a43136f9095a5f968c730fbfe894f94284ebe6d2b50bb17d41b8b5/langchain_mcp_adapters-0.1.9.tar.gz", hash = "sha256:0018cf7b5f7bc4c044e05ec20fcb9ebe345311c8d1060c61d411188001ab3aab", size = 22101 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a4/eb/9e98822d3db22beff44449a8f61fca208d4f59d592a7ce67ce4c400b8f8f/langchain_mcp_adapters-0.1.9-py3-none-any.whl", hash = "sha256:fd131009c60c9e5a864f96576bbe757fc1809abd604891cb2e5d6e8aebd6975c", size = 15300 },
+]
+
+[[package]]
 name = "langchain-nvidia-ai-endpoints"
 version = "0.3.10"
 source = { registry = "https://pypi.org/simple" }
@@ -3550,6 +3564,28 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/99/5b/a36a337438a14116b16480db471ad061c36c3694df7c2084a0da7ba538b7/matplotlib_inline-0.1.7.tar.gz", hash = "sha256:8423b23ec666be3d16e16b60bdd8ac4e86e840ebd1dd11a30b9f117f2fa0ab90", size = 8159 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8f/8e/9ad090d3553c280a8060fbf6e24dc1c0c29704ee7d1c372f0c174aa59285/matplotlib_inline-0.1.7-py3-none-any.whl", hash = "sha256:df192d39a4ff8f21b1895d72e6a13f5fcc5099f00fa84384e0ea28c2cc0653ca", size = 9899 },
+]
+
+[[package]]
+name = "mcp"
+version = "1.11.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "httpx" },
+    { name = "httpx-sse" },
+    { name = "jsonschema" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "python-multipart" },
+    { name = "pywin32", marker = "sys_platform == 'win32'" },
+    { name = "sse-starlette" },
+    { name = "starlette" },
+    { name = "uvicorn", marker = "sys_platform != 'emscripten'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3a/f5/9506eb5578d5bbe9819ee8ba3198d0ad0e2fbe3bab8b257e4131ceb7dfb6/mcp-1.11.0.tar.gz", hash = "sha256:49a213df56bb9472ff83b3132a4825f5c8f5b120a90246f08b0dac6bedac44c8", size = 406907 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/92/9c/c9ca79f9c512e4113a5d07043013110bb3369fc7770040c61378c7fbcf70/mcp-1.11.0-py3-none-any.whl", hash = "sha256:58deac37f7483e4b338524b98bc949b7c2b7c33d978f5fafab5bde041c5e2595", size = 155880 },
 ]
 
 [[package]]
@@ -6051,6 +6087,15 @@ wheels = [
 ]
 
 [[package]]
+name = "python-multipart"
+version = "0.0.20"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f3/87/f44d7c9f274c7ee665a29b885ec97089ec5dc034c7f3fafa03da9e39a09e/python_multipart-0.0.20.tar.gz", hash = "sha256:8dd0cab45b8e23064ae09147625994d090fa46f5b0d1e13af944c331a7fa9d13", size = 37158 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/45/58/38b5afbc1a800eeea951b9285d3912613f2603bdf897a4ab0f4bd7f405fc/python_multipart-0.0.20-py3-none-any.whl", hash = "sha256:8a62d3a8335e06589fe01f2a3e178cdcc632f3fbe0d492ad9ee0ec35aab1f104", size = 24546 },
+]
+
+[[package]]
 name = "pytube"
 version = "15.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -6890,6 +6935,18 @@ wheels = [
 [package.optional-dependencies]
 asyncio = [
     { name = "greenlet" },
+]
+
+[[package]]
+name = "sse-starlette"
+version = "2.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/07/3e/eae74d8d33e3262bae0a7e023bb43d8bdd27980aa3557333f4632611151f/sse_starlette-2.4.1.tar.gz", hash = "sha256:7c8a800a1ca343e9165fc06bbda45c78e4c6166320707ae30b416c42da070926", size = 18635 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e4/f1/6c7eaa8187ba789a6dd6d74430307478d2a91c23a5452ab339b6fbe15a08/sse_starlette-2.4.1-py3-none-any.whl", hash = "sha256:08b77ea898ab1a13a428b2b6f73cfe6d0e607a7b4e15b9bb23e4a37b087fd39a", size = 10824 },
 ]
 
 [[package]]

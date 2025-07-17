@@ -83,6 +83,13 @@ class AgentE2EHelper:
             "Updating infra environment",
         ]
 
+        # Remove the llm infra deployment file for testing
+        llm_file_path = os.path.join(
+            self.dest_path, "infra", "infra", "llm_datarobot.py"
+        )
+        if os.path.exists(llm_file_path):
+            os.remove(llm_file_path)
+
     def cleanup_environment(self):
         # Attempt to destroy the stack
         print("Cancelling any running Pulumi operations for agent")

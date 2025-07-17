@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+- Use `uv run pulumi` to run pulumi commands in the CLI instead of `pulumi` directly.
+- Add support for using `docker_image` in addition to the `docker_context` for building environments.
+- Pin newest datarobot package.
+- Use `datarobot[auth]` for tool authentication.
+- Add support for `mcp` to the base environments.
+- Documentation updates.
 
 ## 0.1.9
 - Raise informative error instead of exit to make pulumi more stable on linux distributions.

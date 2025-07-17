@@ -115,16 +115,34 @@ if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
             + agent_crewai_resource_name,
         )
 else:
-    agent_crewai_execution_environment = pulumi_datarobot.ExecutionEnvironment(
-        resource_name="Execution Environment [docker_context] "
-        + agent_crewai_resource_name,
-        programming_language="python",
-        description="Execution Environment [agent docker_context]",
-        docker_context_path=os.path.join(
-            str(agent_crewai_application_path), "docker_context"
-        ),
-        use_cases=["customModel", "notebook"],
-    )
+    if os.path.exists(
+        os.path.join(str(agent_crewai_application_path), "docker_context.tar.gz")
+    ):
+        pulumi.info(
+            "Using prebuilt Dockerfile docker_context.tar.gz to run the execution environment"
+        )
+        agent_crewai_execution_environment = pulumi_datarobot.ExecutionEnvironment(
+            resource_name="Execution Environment [docker_context] "
+            + agent_crewai_resource_name,
+            programming_language="python",
+            description="Execution Environment [agent docker_context]",
+            docker_image=os.path.join(
+                str(agent_crewai_application_path), "docker_context.tar.gz"
+            ),
+            use_cases=["customModel", "notebook"],
+        )
+    else:
+        pulumi.info("Using docker_context folder to compile the execution environment")
+        agent_crewai_execution_environment = pulumi_datarobot.ExecutionEnvironment(
+            resource_name="Execution Environment [docker_context] "
+            + agent_crewai_resource_name,
+            programming_language="python",
+            description="Execution Environment [agent docker_context]",
+            docker_context_path=os.path.join(
+                str(agent_crewai_application_path), "docker_context"
+            ),
+            use_cases=["customModel", "notebook"],
+        )
 
 agent_crewai_custom_model_files = get_custom_model_files(
     str(os.path.join(str(agent_crewai_application_path), "custom_model"))
