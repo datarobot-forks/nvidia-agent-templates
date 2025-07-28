@@ -115,7 +115,7 @@ Pulumi will show a list of resources its going to create, and if you are ready s
 It will take some time to create an execution environment (~5 minutes). After that, pulumi will report you 
 a custom model id, and a chat interface endpoint for it:
 ```
-Agent Chat Completion Endpoint [agent_generic_base]: "https://staging.datarobot.com/api/v2/genai/agents/fromCustomModel/683ed1fcd767c535b580bc9d/chat/"
+Agent Chat Completion Endpoint [agent_generic_base]: "https://app.datarobot.com/api/v2/genai/agents/fromCustomModel/683ed1fcd767c535b580bc9d/chat/"
 ```
 
 When you done experimenting, you can deploy your agent:
