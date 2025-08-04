@@ -56,7 +56,7 @@ tasks:
       - uv run cli.py {{.CLI_ARGS}}
     silent: true
   dev:
-    desc: 🔨[agent_crewai] Run the development server
+    desc: 🔨 [agent_crewai] Run the development server
     env:
       TARGET_NAME: response
       FLASK_DEBUG: 1

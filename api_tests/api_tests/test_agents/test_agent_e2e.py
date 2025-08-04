@@ -13,8 +13,6 @@
 # limitations under the License.
 import os
 
-import pytest
-
 from api_tests.api_tests.test_agents.helpers import AgentE2EHelper
 
 
@@ -32,49 +30,49 @@ def test_local_environment_variables():
         )
 
 
-@pytest.mark.parametrize(
-    "agent_name, agent_quickstart_index",
-    [
-        ("agent_crewai", 1),
-        ("agent_generic_base", 2),
-        ("agent_langgraph", 3),
-        ("agent_llamaindex", 4),
-    ],
-)
-def test_e2e_agents(
-    agent_name,
-    agent_quickstart_index,
+def test_e2e_agent_crewai(
     root_path,
     repo_path,
 ):
-    if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
-        print(
-            "⚠️ WARNING: DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT is set, "
-            "this will use a pre-existing environment. ⚠️"
-        )
-
-    dest_path = os.path.join(root_path, f"{agent_name}_e2e_test_dir")
+    print("Running agent_crewai E2E agent test")
     agent_helper = AgentE2EHelper(
-        agent_name=agent_name,
-        agent_quickstart_index=agent_quickstart_index,
+        agent_name="agent_crewai",
         repo_path=repo_path,
-        dest_path=dest_path,
     )
-    try:
-        agent_helper.setup_environment()
+    agent_helper.run()
 
-        agent_helper.run_local_execution("Artificial Intelligence")
 
-        agent_helper.pulumi_create_stack()
+def test_e2e_agent_base(
+    root_path,
+    repo_path,
+):
+    print("Running agent_generic_base E2E agent test")
+    agent_helper = AgentE2EHelper(
+        agent_name="agent_generic_base",
+        repo_path=repo_path,
+    )
+    agent_helper.run()
 
-        custom_model_id = agent_helper.pulumi_build_agent()
-        agent_helper.run_custom_model_execution(
-            "Artificial Intelligence", custom_model_id
-        )
 
-        deployment_id = agent_helper.pulumi_deploy_agent()
-        agent_helper.run_deployment_execution("Artificial Intelligence", deployment_id)
+def test_e2e_agent_langgraph(
+    root_path,
+    repo_path,
+):
+    print("Running agent_langgraph E2E agent test")
+    agent_helper = AgentE2EHelper(
+        agent_name="agent_langgraph",
+        repo_path=repo_path,
+    )
+    agent_helper.run()
 
-        print("Agent execution completed successfully")
-    finally:
-        agent_helper.cleanup_environment()
+
+def test_e2e_agent_llamaindex(
+    root_path,
+    repo_path,
+):
+    print("Running agent_llamaindex E2E agent test")
+    agent_helper = AgentE2EHelper(
+        agent_name="agent_llamaindex",
+        repo_path=repo_path,
+    )
+    agent_helper.run()

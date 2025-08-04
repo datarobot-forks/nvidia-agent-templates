@@ -77,7 +77,7 @@ This repository includes four templates to get started. They are selected during
 
 ### Step 4: Use quickstart
 
-The templates provide a `quickstart.py` and a `task start` command to help you quickly setup the environment and
+The templates provide a `quickstart.py` and a `task setup` command to help you quickly setup the environment and
 remove all unnecessary files. You can run the quickstart script to initialize the agent.
 
 ```bash

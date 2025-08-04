@@ -34,33 +34,45 @@ tasks:
       - uv run ruff check --diff .
       - uv run mypy --pretty .
     silent: true
-  all:
+  build:
+    desc: "🐳 Build the API test Docker image"
+    cmds:
+      - cd .. && docker build -f api_tests/docker_context/Dockerfile . -t test
+    silent: true
+  test:
     desc: "🧪 Run all API tests"
     cmds:
-      - echo "Running all tests"
-      - uv run pytest -vv -s ./api_tests/ --ignore-glob=**e2e_test_dir*
+      - task: build
+      - docker run --env-file .env -t test base
+      - docker run --env-file .env -t test crewai
+      - docker run --env-file .env -t test langgraph
+      - docker run --env-file .env -t test llamaindex
     silent: true
-  base:
+  test-base:
     desc: "🤖 Run base agent API tests"
     cmds:
       - echo "Running base agent tests"
-      - uv run pytest -vv -s -k "test_e2e_agents[agent_generic_base-2]" --ignore-glob=**e2e_test_dir*
+      - task: build
+      - docker run --env-file .env -t test base
     silent: true
-  crewai:
+  test-crewai:
     desc: "👥 Run crewai agent API tests"
     cmds:
       - echo "Running crewai agent tests"
-      - uv run pytest -vv -s -k "test_e2e_agents[agent_crewai-1]" --ignore-glob=**e2e_test_dir*
+      - task: build
+      - docker run --env-file .env -t test crewai
     silent: true
-  langgraph:
+  test-langgraph:
     desc: "🔄 Run langgraph agent API tests"
     cmds:
       - echo "Running langgraph agent tests"
-      - uv run pytest -vv -s -k "test_e2e_agents[agent_langgraph-3]" --ignore-glob=**e2e_test_dir*
+      - task: build
+      - docker run --env-file .env -t test langgraph
     silent: true
-  llamaindex:
+  test-llamaindex:
     desc: "🦙 Run llamaindex agent API tests"
     cmds:
       - echo "Running llamaindex agent tests"
-      - uv run pytest -vv -s -k "test_e2e_agents[agent_llamaindex-4]" --ignore-glob=**e2e_test_dir*
+      - task: build
+      - docker run --env-file .env -t test llamaindex
     silent: true

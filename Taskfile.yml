@@ -72,9 +72,3 @@ tasks:
       - echo "Linting infra"
       - cd ./infra && uv run ruff check . --fix && uv run ruff format .
     silent: true
-  test_api_tests:
-    desc: "Run API tests"
-    cmds:
-      - echo "Running pytest on api_tests"
-      - cd ./api_tests && uv run pytest -vv -s ./api_tests/
-    silent: true
