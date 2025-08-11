@@ -69,7 +69,7 @@ echo "Running quickstart with selection: $AGENT (number: $NUMBER)"
 # Run the quickstart command with the provided number
 echo "START QUICKSTART"
 echo "$NUMBER" | uv run quickstart.py
-task setup
+task install
 rm infra/infra/llm_datarobot.py
 
 # Setup the local environment

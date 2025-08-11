@@ -67,6 +67,7 @@ class MyAgent:
         api_base: Optional[str] = None,
         model: Optional[str] = None,
         verbose: Optional[Union[bool, str]] = True,
+        timeout: Optional[int] = 90,
         **kwargs: Any,
     ):
         """Initializes the MyAgent class with API key, base URL, model, and verbosity settings.
@@ -80,6 +81,8 @@ class MyAgent:
                 Defaults to None.
             verbose: Optional[Union[bool, str]]: Whether to enable verbose logging.
                 Accepts boolean or string values ("true"/"false"). Defaults to True.
+            timeout: Optional[int]: How long to wait for the agent to respond.
+                Defaults to 90 seconds.
             **kwargs: Any: Additional keyword arguments passed to the agent.
                 Contains any parameters received in the CompletionCreateParams.
 
@@ -89,6 +92,7 @@ class MyAgent:
         self.api_key = api_key or os.environ.get("DATAROBOT_API_TOKEN")
         self.api_base = api_base or os.environ.get("DATAROBOT_ENDPOINT")
         self.model = model
+        self.timeout = timeout
         if isinstance(verbose, str):
             self.verbose = verbose.lower() == "true"
         elif isinstance(verbose, bool):
@@ -123,6 +127,7 @@ class MyAgent:
             model="datarobot/azure/gpt-4o-mini",
             api_base=self.api_base_litellm,
             api_key=self.api_key,
+            timeout=self.timeout,
         )
 
     @property
@@ -141,10 +146,11 @@ class MyAgent:
             model="datarobot/azure/gpt-4o-mini",
             api_base=f"{self.api_base_litellm}/api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/",
             api_key=self.api_key,
+            timeout=self.timeout,
         )
 
     @staticmethod
-    async def record_notes(ctx: Context, notes: str, notes_title: str) -> str:  # type: ignore[type-arg]
+    async def record_notes(ctx: Context, notes: str, notes_title: str) -> str:
         """Useful for recording notes on a given topic. Your input should be notes with a
         title to save the notes under."""
         current_state = await ctx.get("state")
@@ -155,7 +161,7 @@ class MyAgent:
         return "Notes recorded."
 
     @staticmethod
-    async def write_report(ctx: Context, report_content: str) -> str:  # type: ignore[type-arg]
+    async def write_report(ctx: Context, report_content: str) -> str:
         """Useful for writing a report on a given topic. Your input should be a markdown formatted report."""
         current_state = await ctx.get("state")
         current_state["report_content"] = report_content
@@ -163,7 +169,7 @@ class MyAgent:
         return "Report written."
 
     @staticmethod
-    async def review_report(ctx: Context, review: str) -> str:  # type: ignore[type-arg]
+    async def review_report(ctx: Context, review: str) -> str:
         """Useful for reviewing a report and providing feedback. Your input should be a review of the report."""
         current_state = await ctx.get("state")
         current_state["review"] = review
@@ -268,7 +274,7 @@ class MyAgent:
 
     def run(
         self, completion_create_params: CompletionCreateParams
-    ) -> Tuple[str, Sequence[Event], dict[str, int]]:
+    ) -> Tuple[str, dict[str, int], Sequence[Event] | None]:
         """Run the agent with the provided completion parameters.
 
         [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
@@ -282,7 +288,8 @@ class MyAgent:
             completion_create_params (CompletionCreateParams): The parameters for
                 the completion request, which includes the input topic and other settings.
         Returns:
-            tuple[list[Any], CrewOutput]: A tuple containing a list of messages (events) and the crew output.
+            tuple[str, dict[str, int], Sequence[Event] | None]: A tuple containing the agent
+                response, usage_statistics and a list of messages (events).
 
         """
         # Example helper for extracting inputs as a json from the completion_create_params["messages"]
@@ -308,4 +315,9 @@ class MyAgent:
             "prompt_tokens": 0,
             "total_tokens": 0,
         }
-        return str(result["report_content"]), events, usage_metrics
+        # The `events` variable is used to compute agentic metrics
+        # (e.g. Task Adherence, Agent Goal Accuracy, Agent Goal Accuracy with Reference,
+        # Tool Call Accuracy).
+        # If you are not interested in these metrics, you can also return None instead.
+        # This will reduce the size of the response significantly.
+        return str(result["report_content"]), usage_metrics, events

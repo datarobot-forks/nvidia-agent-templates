@@ -15,22 +15,30 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 # Install go-task
 RUN sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin
 
-# Install Pulumi
-RUN curl -fsSL https://get.pulumi.com | sh
-ENV PATH="/root/.pulumi/bin:${PATH}"
+# Install Pulumi to a global location
+RUN curl -fsSL https://get.pulumi.com | sh && \
+    mv /root/.pulumi/bin/* /usr/local/bin/ && \
+    rm -rf /root/.pulumi
 
 # Verify installations
 RUN uv --version && \
     task --version && \
     pulumi version
 
-# Copy all files from parent directory into workspace
+# Create a non-root user with home directory
+RUN groupadd -r appuser && useradd -r -g appuser -m -d /home/appuser appuser
+
+# Copy files and set permissions
 COPY . /workspace
 COPY ./api_tests/docker_context/setup.sh /workspace/setup.sh
-RUN chmod +x /workspace/setup.sh
+RUN chmod +x /workspace/setup.sh \
+    && chown -R appuser:appuser /workspace /home/appuser
 
 # Set working directory
 WORKDIR /workspace
+
+# Switch to non-root user
+USER appuser
 
 # Default command
 ENTRYPOINT ["/workspace/setup.sh"]

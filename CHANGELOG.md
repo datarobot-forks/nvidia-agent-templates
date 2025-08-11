@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## v0.1.13
+- Add pipeline for automating the template repository update process when a new component is released. 
+- Add pipeline for performing fully tested release to `datarobot-community` org
+- Fix avd-ds-0002 in `api test` dockerfile
+- Remove unusable requirements.txt
+- Add 90 second default timeout for LLM calls to code templates
+- Add instructions how to reduce the size of the responses to the template code
+- Resolve starlette vulnerability in docker_context containers
+- Do not raise an error in the `llm_datarobot` component if llm gateway is enabled.
+
 ## v0.1.12
 - Add pipeline for bumping release version automatically and updating changelog versions.
 - Add end to end testing automations
