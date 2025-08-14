@@ -18,6 +18,7 @@ from typing import cast
 import datarobot as dr
 import pulumi
 import pulumi_datarobot
+from datarobot_pulumi_utils.pulumi import export
 from datarobot_pulumi_utils.pulumi.custom_model_deployment import CustomModelDeployment
 from datarobot_pulumi_utils.pulumi.stack import PROJECT_NAME
 from datarobot_pulumi_utils.schema.custom_models import (
@@ -236,6 +237,10 @@ if os.environ.get("AGENT_DEPLOY") != "0":
 
     pulumi.export(
         "Agent Deployment ID " + agent_langgraph_resource_name,
+        agent_langgraph_agent_deployment.id,
+    )
+    export(
+        agent_langgraph_application_name.upper() + "_DEPLOYMENT_ID",
         agent_langgraph_agent_deployment.id,
     )
     pulumi.export(

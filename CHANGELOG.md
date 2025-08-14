@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## v0.2.0
+- Minor fixes to templates.
+- Ensure pyarrow is pinned to < 21.0.0 to prevent potential ragas issues in some cases.
+- Update datarobot package to latest release.
+- Update datarobot-drum package to the latest release, brings support for kwargs and headers.
+- Update datarobot-moderations to the latest release.
+- Other select packages updated.
+
 ## v0.1.13
 - Add pipeline for automating the template repository update process when a new component is released. 
 - Add pipeline for performing fully tested release to `datarobot-community` org
