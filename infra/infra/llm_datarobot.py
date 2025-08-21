@@ -16,6 +16,7 @@ import os
 import datarobot as dr
 import pulumi
 import pulumi_datarobot as datarobot
+from datarobot_pulumi_utils.pulumi import export
 from datarobot_pulumi_utils.pulumi.stack import PROJECT_NAME
 from datarobot_pulumi_utils.pulumi.custom_model_deployment import (
     CustomModelDeployment,
@@ -49,7 +50,7 @@ if os.environ.get("USE_DATAROBOT_LLM_GATEWAY") in [0, "0", False, "false", "Fals
 
     llm_blueprint_args = LLMBlueprintArgs(
         resource_name="LLM Blueprint " + llm_datarobot_resource_name,
-        llm_id="azure-openai-gpt-4",
+        llm_id="azure-openai-gpt-4-o",
         llm_settings=LLMSettings(
             max_completion_length=2048,
             temperature=0.1,
@@ -120,3 +121,4 @@ if os.environ.get("USE_DATAROBOT_LLM_GATEWAY") in [0, "0", False, "false", "Fals
     ]
 
     pulumi.export("Deployment ID " + llm_datarobot_resource_name, llm_deployment.id)
+    export("LLM_DEPLOYMENT_ID", llm_deployment.id)

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+- Update pulumi to follow naming convention in created assets: `[$stack_name] $agent_name`
+- Restore usage of Auth SDK
+
 ## v0.2.0
 - Minor fixes to templates.
 - Ensure pyarrow is pinned to < 21.0.0 to prevent potential ragas issues in some cases.
@@ -16,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Other select packages updated.
 
 ## v0.1.13
-- Add pipeline for automating the template repository update process when a new component is released. 
+- Add pipeline for automating the template repository update process when a new component is released.
 - Add pipeline for performing fully tested release to `datarobot-community` org
 - Fix avd-ds-0002 in `api test` dockerfile
 - Remove unusable requirements.txt

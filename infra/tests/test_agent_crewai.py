@@ -115,7 +115,8 @@ def test_execution_environment_not_set_and_docker_context(monkeypatch):
         == "Execution Environment [docker_context] [agent_crewai]"
     )
     assert kwargs["programming_language"] == "python"
-    assert kwargs["description"] == "Execution Environment [agent docker_context]"
+    assert kwargs["name"] == "[unittest] agent_crewai"
+    assert kwargs["description"] == "Execution Environment for [unittest] agent_crewai"
     assert "docker_context_path" in kwargs
     assert "docker_image" not in kwargs
     assert kwargs["use_cases"] == ["customModel", "notebook"]
@@ -158,7 +159,8 @@ def test_execution_environment_not_set_with_docker_image(monkeypatch):
         == "Execution Environment [docker_context] [agent_crewai]"
     )
     assert kwargs["programming_language"] == "python"
-    assert kwargs["description"] == "Execution Environment [agent docker_context]"
+    assert kwargs["name"] == "[unittest] agent_crewai"
+    assert kwargs["description"] == "Execution Environment for [unittest] agent_crewai"
     assert "docker_image" in kwargs
     assert "docker_context_path" not in kwargs
     assert kwargs["use_cases"] == ["customModel", "notebook"]
@@ -255,6 +257,7 @@ def test_custom_model_created(monkeypatch):
     agent_infra.pulumi_datarobot.CustomModel.assert_called_once()
     args, kwargs = agent_infra.pulumi_datarobot.CustomModel.call_args
     assert kwargs["resource_name"].startswith("Custom Model")
+    assert kwargs["name"] == "[unittest] agent_crewai"
     assert (
         kwargs["base_environment_id"]
         == agent_infra.agent_crewai_execution_environment.id
@@ -293,11 +296,11 @@ def test_agent_deployment_created_when_env(monkeypatch):
     agent_infra.CustomModelDeployment.assert_called_once()
     # Check that pulumi.export was called for deployment id and endpoint
     agent_infra.pulumi.export.assert_any_call(
-        "Agent Deployment ID " + agent_infra.agent_crewai_resource_name,
+        "Agent Deployment ID " + agent_infra.agent_crewai_asset_name,
         agent_infra.CustomModelDeployment.return_value.id,
     )
     agent_infra.pulumi.export.assert_any_call(
-        "Agent Deployment Chat Endpoint " + agent_infra.agent_crewai_resource_name,
+        "Agent Deployment Chat Endpoint " + agent_infra.agent_crewai_asset_name,
         agent_infra.CustomModelDeployment.return_value.id.apply.return_value,
     )
 

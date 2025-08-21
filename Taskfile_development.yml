@@ -44,6 +44,12 @@ tasks:
             - agent_llamaindex
         - name: BRANCH
     silent: true
+  update-llm:
+    desc: "💻 Update llm component to the latest version"
+    cmds:
+      - echo "Updating llm"
+      - uvx copier update -a ".datarobot/answers/llm-llm_datarobot.yml" -A
+    silent: true
   update-all:
     desc: "💻 Update all agent components to the latest version"
     cmds:
@@ -63,6 +69,8 @@ tasks:
       - task: update
         vars:
           AGENT: agent_llamaindex
+      - task: create-commit
+      - task: update-llm
       - task: create-commit
   update-all-branch:
     desc: "💻 Update all agent components to a specific branch"

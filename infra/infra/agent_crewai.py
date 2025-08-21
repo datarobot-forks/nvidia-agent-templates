@@ -66,6 +66,7 @@ __all__ = [
 
 agent_crewai_application_name: str = "agent_crewai"
 agent_crewai_resource_name: str = "[agent_crewai]"
+agent_crewai_asset_name: str = f"[{PROJECT_NAME}] agent_crewai"
 agent_crewai_application_path = project_dir.parent / "agent_crewai"
 
 
@@ -116,6 +117,7 @@ if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
             + agent_crewai_resource_name,
         )
 else:
+    agent_crewai_exec_env_use_cases = ["customModel", "notebook"]
     if os.path.exists(
         os.path.join(str(agent_crewai_application_path), "docker_context.tar.gz")
     ):
@@ -125,24 +127,26 @@ else:
         agent_crewai_execution_environment = pulumi_datarobot.ExecutionEnvironment(
             resource_name="Execution Environment [docker_context] "
             + agent_crewai_resource_name,
+            name=agent_crewai_asset_name,
+            description="Execution Environment for " + agent_crewai_asset_name,
             programming_language="python",
-            description="Execution Environment [agent docker_context]",
             docker_image=os.path.join(
                 str(agent_crewai_application_path), "docker_context.tar.gz"
             ),
-            use_cases=["customModel", "notebook"],
+            use_cases=agent_crewai_exec_env_use_cases,
         )
     else:
         pulumi.info("Using docker_context folder to compile the execution environment")
         agent_crewai_execution_environment = pulumi_datarobot.ExecutionEnvironment(
             resource_name="Execution Environment [docker_context] "
             + agent_crewai_resource_name,
+            name=agent_crewai_asset_name,
+            description="Execution Environment for " + agent_crewai_asset_name,
             programming_language="python",
-            description="Execution Environment [agent docker_context]",
             docker_context_path=os.path.join(
                 str(agent_crewai_application_path), "docker_context"
             ),
-            use_cases=["customModel", "notebook"],
+            use_cases=agent_crewai_exec_env_use_cases,
         )
 
 agent_crewai_custom_model_files = get_custom_model_files(
@@ -151,6 +155,7 @@ agent_crewai_custom_model_files = get_custom_model_files(
 
 agent_crewai_custom_model = pulumi_datarobot.CustomModel(
     resource_name="Custom Model " + agent_crewai_resource_name,
+    name=agent_crewai_asset_name,
     base_environment_id=agent_crewai_execution_environment.id,
     base_environment_version_id=agent_crewai_execution_environment.version_id,
     target_type="AgenticWorkflow",
@@ -168,16 +173,16 @@ agent_crewai_custom_model_endpoint = agent_crewai_custom_model.id.apply(
 )
 
 # Export the IDs of the created resources
-pulumi.export("Agent Use Case ID " + agent_crewai_resource_name, use_case.id)
+pulumi.export("Agent Use Case ID " + agent_crewai_asset_name, use_case.id)
 pulumi.export(
-    "Agent Execution Environment ID " + agent_crewai_resource_name,
+    "Agent Execution Environment ID " + agent_crewai_asset_name,
     agent_crewai_execution_environment.id,
 )
 pulumi.export(
-    "Agent Custom Model ID " + agent_crewai_resource_name, agent_crewai_custom_model.id
+    "Agent Custom Model ID " + agent_crewai_asset_name, agent_crewai_custom_model.id
 )
 pulumi.export(
-    "Agent Custom Model Chat Endpoint " + agent_crewai_resource_name,
+    "Agent Custom Model Chat Endpoint " + agent_crewai_asset_name,
     agent_crewai_custom_model_endpoint,
 )
 
@@ -186,16 +191,19 @@ agent_crewai_agent_deployment_id: pulumi.Output[str] = cast(pulumi.Output[str], 
 if os.environ.get("AGENT_DEPLOY") != "0":
     agent_crewai_prediction_environment = pulumi_datarobot.PredictionEnvironment(
         resource_name="Prediction Environment " + agent_crewai_resource_name,
+        name=agent_crewai_asset_name,
         platform=dr.enums.PredictionEnvironmentPlatform.DATAROBOT_SERVERLESS,
+        opts=pulumi.ResourceOptions(retain_on_delete=True),
     )
 
     agent_crewai_registered_model_args = RegisteredModelArgs(
         resource_name="Registered Model " + agent_crewai_resource_name,
+        name=agent_crewai_asset_name,
     )
 
     agent_crewai_deployment_args = DeploymentArgs(
         resource_name="Deployment " + agent_crewai_resource_name,
-        label=f"Deployment [{PROJECT_NAME}] " + agent_crewai_resource_name,
+        label=agent_crewai_asset_name,
         association_id_settings=pulumi_datarobot.DeploymentAssociationIdSettingsArgs(
             column_names=["association_id"],
             auto_generate_id=False,
@@ -229,7 +237,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
     )
 
     pulumi.export(
-        "Agent Deployment ID " + agent_crewai_resource_name,
+        "Agent Deployment ID " + agent_crewai_asset_name,
         agent_crewai_agent_deployment.id,
     )
     export(
@@ -237,7 +245,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         agent_crewai_agent_deployment.id,
     )
     pulumi.export(
-        "Agent Deployment Chat Endpoint " + agent_crewai_resource_name,
+        "Agent Deployment Chat Endpoint " + agent_crewai_asset_name,
         agent_crewai_deployment_endpoint,
     )
 

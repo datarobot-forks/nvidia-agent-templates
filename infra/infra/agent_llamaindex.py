@@ -66,6 +66,7 @@ __all__ = [
 
 agent_llamaindex_application_name: str = "agent_llamaindex"
 agent_llamaindex_resource_name: str = "[agent_llamaindex]"
+agent_llamaindex_asset_name: str = f"[{PROJECT_NAME}] agent_llamaindex"
 agent_llamaindex_application_path = project_dir.parent / "agent_llamaindex"
 
 
@@ -120,6 +121,7 @@ if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
             )
         )
 else:
+    agent_llamaindex_exec_env_use_cases = ["customModel", "notebook"]
     if os.path.exists(
         os.path.join(str(agent_llamaindex_application_path), "docker_context.tar.gz")
     ):
@@ -129,24 +131,26 @@ else:
         agent_llamaindex_execution_environment = pulumi_datarobot.ExecutionEnvironment(
             resource_name="Execution Environment [docker_context] "
             + agent_llamaindex_resource_name,
+            name=agent_llamaindex_asset_name,
+            description="Execution Environment for " + agent_llamaindex_asset_name,
             programming_language="python",
-            description="Execution Environment [agent docker_context]",
             docker_image=os.path.join(
                 str(agent_llamaindex_application_path), "docker_context.tar.gz"
             ),
-            use_cases=["customModel", "notebook"],
+            use_cases=agent_llamaindex_exec_env_use_cases,
         )
     else:
         pulumi.info("Using docker_context folder to compile the execution environment")
         agent_llamaindex_execution_environment = pulumi_datarobot.ExecutionEnvironment(
             resource_name="Execution Environment [docker_context] "
             + agent_llamaindex_resource_name,
+            name=agent_llamaindex_asset_name,
+            description="Execution Environment for " + agent_llamaindex_asset_name,
             programming_language="python",
-            description="Execution Environment [agent docker_context]",
             docker_context_path=os.path.join(
                 str(agent_llamaindex_application_path), "docker_context"
             ),
-            use_cases=["customModel", "notebook"],
+            use_cases=agent_llamaindex_exec_env_use_cases,
         )
 
 agent_llamaindex_custom_model_files = get_custom_model_files(
@@ -155,6 +159,7 @@ agent_llamaindex_custom_model_files = get_custom_model_files(
 
 agent_llamaindex_custom_model = pulumi_datarobot.CustomModel(
     resource_name="Custom Model " + agent_llamaindex_resource_name,
+    name=agent_llamaindex_asset_name,
     base_environment_id=agent_llamaindex_execution_environment.id,
     base_environment_version_id=agent_llamaindex_execution_environment.version_id,
     target_type="AgenticWorkflow",
@@ -172,17 +177,17 @@ agent_llamaindex_custom_model_endpoint = agent_llamaindex_custom_model.id.apply(
 )
 
 # Export the IDs of the created resources
-pulumi.export("Agent Use Case ID " + agent_llamaindex_resource_name, use_case.id)
+pulumi.export("Agent Use Case ID " + agent_llamaindex_asset_name, use_case.id)
 pulumi.export(
-    "Agent Execution Environment ID " + agent_llamaindex_resource_name,
+    "Agent Execution Environment ID " + agent_llamaindex_asset_name,
     agent_llamaindex_execution_environment.id,
 )
 pulumi.export(
-    "Agent Custom Model ID " + agent_llamaindex_resource_name,
+    "Agent Custom Model ID " + agent_llamaindex_asset_name,
     agent_llamaindex_custom_model.id,
 )
 pulumi.export(
-    "Agent Custom Model Chat Endpoint " + agent_llamaindex_resource_name,
+    "Agent Custom Model Chat Endpoint " + agent_llamaindex_asset_name,
     agent_llamaindex_custom_model_endpoint,
 )
 
@@ -193,16 +198,19 @@ agent_llamaindex_agent_deployment_id: pulumi.Output[str] = cast(
 if os.environ.get("AGENT_DEPLOY") != "0":
     agent_llamaindex_prediction_environment = pulumi_datarobot.PredictionEnvironment(
         resource_name="Prediction Environment " + agent_llamaindex_resource_name,
+        name=agent_llamaindex_asset_name,
         platform=dr.enums.PredictionEnvironmentPlatform.DATAROBOT_SERVERLESS,
+        opts=pulumi.ResourceOptions(retain_on_delete=True),
     )
 
     agent_llamaindex_registered_model_args = RegisteredModelArgs(
         resource_name="Registered Model " + agent_llamaindex_resource_name,
+        name=agent_llamaindex_asset_name,
     )
 
     agent_llamaindex_deployment_args = DeploymentArgs(
         resource_name="Deployment " + agent_llamaindex_resource_name,
-        label=f"Deployment [{PROJECT_NAME}] " + agent_llamaindex_resource_name,
+        label=agent_llamaindex_asset_name,
         association_id_settings=pulumi_datarobot.DeploymentAssociationIdSettingsArgs(
             column_names=["association_id"],
             auto_generate_id=False,
@@ -236,7 +244,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
     )
 
     pulumi.export(
-        "Agent Deployment ID " + agent_llamaindex_resource_name,
+        "Agent Deployment ID " + agent_llamaindex_asset_name,
         agent_llamaindex_agent_deployment.id,
     )
     export(
@@ -244,7 +252,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         agent_llamaindex_agent_deployment.id,
     )
     pulumi.export(
-        "Agent Deployment Chat Endpoint " + agent_llamaindex_resource_name,
+        "Agent Deployment Chat Endpoint " + agent_llamaindex_asset_name,
         agent_llamaindex_deployment_endpoint,
     )
 
