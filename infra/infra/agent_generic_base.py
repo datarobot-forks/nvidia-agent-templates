@@ -163,6 +163,20 @@ agent_generic_base_custom_model_files = get_custom_model_files(
     str(os.path.join(str(agent_generic_base_application_path), "custom_model"))
 )
 
+agent_generic_base_runtime_parameters = []
+if os.environ.get("LLM_DATAROBOT_DEPLOYMENT_ID"):
+    agent_generic_base_runtime_parameters = [
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key="LLM_DATAROBOT_DEPLOYMENT_ID",
+            type="string",
+            value=os.environ["LLM_DATAROBOT_DEPLOYMENT_ID"],
+        ),
+    ]
+elif os.environ.get("USE_DATAROBOT_LLM_GATEWAY") in [0, "0", False, "false", "False"]:
+    from .llm_datarobot import app_runtime_parameters  # type: ignore[import-not-found]
+
+    agent_generic_base_runtime_parameters = app_runtime_parameters  # type: ignore
+
 agent_generic_base_custom_model = pulumi_datarobot.CustomModel(
     resource_name="Custom Model " + agent_generic_base_resource_name,
     name=agent_generic_base_asset_name,
@@ -173,9 +187,7 @@ agent_generic_base_custom_model = pulumi_datarobot.CustomModel(
     language="python",
     use_case_ids=[use_case.id],
     files=agent_generic_base_custom_model_files,
-    runtime_parameter_values=[],
-    # To use the LLM DataRobot Deployment in your Agent, use the alternative parameter below
-    # runtime_parameter_values=llm_datarobot_app_runtime_parameters,
+    runtime_parameter_values=agent_generic_base_runtime_parameters,
 )
 
 agent_generic_base_custom_model_endpoint = agent_generic_base_custom_model.id.apply(
@@ -246,7 +258,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         agent_generic_base_agent_deployment.id.apply(lambda id: f"{id}")
     )
     agent_generic_base_deployment_endpoint = agent_generic_base_agent_deployment.id.apply(
-        lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/genai/agents/fromCustomModel/{id}/chat/"
+        lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}/chat/completions"
     )
 
     pulumi.export(

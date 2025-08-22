@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## v0.2.2
+- Fix and simplify using an external deployment as an LLM instead of LLM gateway.
+
+## v0.2.1
 - Update pulumi to follow naming convention in created assets: `[$stack_name] $agent_name`
 - Restore usage of Auth SDK
 

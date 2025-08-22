@@ -1,6 +1,6 @@
 # [DataRobot AI agent templates](https://github.com/datarobot-community/datarobot-agent-templates)
 
-This repository provides ready-to-use templates for building and deploying AI agents with multi-agent frameworks. These templates streamline the process of setting up your own agents with minimal configuration requirements. 
+This repository provides ready-to-use templates for building and deploying AI agents with multi-agent frameworks. These templates streamline the process of setting up your own agents with minimal configuration requirements.
 
 These templates support:
 
@@ -55,7 +55,7 @@ cp .env.sample .env
 nano .env  # or vim .env, code .env, etc.
 ```
 
-Your `.env` file must contain, at minimum, the following variables, but it is recommended to set all variables for a 
+Your `.env` file must contain, at minimum, the following variables, but it is recommended to set all variables for a
 complete setup:
 
 ```bash
@@ -75,25 +75,16 @@ This repository includes four templates to get started. They are selected during
 | `agent_llamaindex` | Llama-Index | RAG-focused framework |
 | `agent_generic_base` | Generic | Base template for any framework |
 
-### Step 4: Use quickstart
+### Step 4: Start
 
-The templates provide a `quickstart.py` and a `task setup` command to help you quickly setup the environment and
-remove all unnecessary files. You can run the quickstart script to initialize the agent.
-
-```bash
-python quickstart.py
-# python3 quickstart.py  # If python points to Python 2.x
-# uv run quickstart.py  # If using uv
-```
-
-Alternatively, use the Taskfile command.
+The templates provide a helper script to start the development process. Just run
 
 ```bash
 task start
 ```
 
 Answer the prompts to select your agent framework and configure the initial setup. This will remove any
-unused files from the repository and prepare help you prepare your environments for agent development and testing.
+unused files from the repository and help you prepare your environments for agent development and testing.
 
 ## Develop the agent
 
@@ -112,7 +103,7 @@ task build
 
 Pulumi will show a list of resources its going to create, and if you are ready select yes to continue.
 
-It will take some time to create an execution environment (~5 minutes). After that, pulumi will report you 
+It will take some time to create an execution environment (~5 minutes). After that, pulumi will report you
 a custom model id, and a chat interface endpoint for it:
 ```
 Agent Chat Completion Endpoint [agent_generic_base]: "https://app.datarobot.com/api/v2/genai/agents/fromCustomModel/683ed1fcd767c535b580bc9d/chat/"
@@ -139,7 +130,7 @@ that all the environments are properly synchronized. There are two different met
 want to be able to run the agent anywhere, it is recommended that you create an updated Execution Environment**
 
 ### Execution Environment Requirements
-This approach will allow you to add packages to your agent and use all the development pipelines fully. It is 
+This approach will allow you to add packages to your agent and use all the development pipelines fully. It is
 slightly more complex than the second method but is generally the recommended approach for most use cases.
 
 1. In your `.env` file ensure that `DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT` is unset, or you can delete it completely.
@@ -188,50 +179,19 @@ locally test the agent with the new package. This will also carry through to dep
 _This method can also be used to dynamically pass any variable between pulumi deployments. The dependencies will
 automatically be deployed in the appropriate order without any user input._
 
-The template provides two possible methods for developing agents. The default method uses the DataRobot LLM Gateway
-as te LLM for your agent. This allows you to use any model available in DataRobot as the LLM for your agent.
-Alternatively, you may want to use a custom model to host a Generative AI Playground model. This is a 
-supported scenario and you need to make a few edits to some files to enable it.
+The template provides two LLM endpoints for the agent. The default method uses the DataRobot LLM Gateway. Alternatively,
+you may use a custom deployment: either let pulumi create it for you, or use an existing one.
 
-A sample Playground Model is provided in the `infra/infra/llm_datarobot.py` pulumi file. You can enable this 
-to be deployed by default by changing the `.env` file to set `USE_DATAROBOT_LLM_GATEWAY=false`.
+A sample Playground Model is provided in the `infra/infra/llm_datarobot.py` pulumi file.
 
 1. Edit your `.env` file:
    ```bash
    USE_DATAROBOT_LLM_GATEWAY=false
    ```
-2. Open the `infra` file for you agent (e.g. `infra/infra/agent_generic_base.py`)
-3. Uncomment the import for the `llm_datarobot` module:
-   ```python
-   from .llm_datarobot import app_runtime_parameters as llm_datarobot_app_runtime_parameters
+2. If you wish to use an existing LLM deployment, set in `.env`:
+   ```bash
+   LLM_DATAROBOT_DEPLOYMENT_ID=<your_deployment_id>
    ```
-4. Uncomment the `runtime_parameter_values` for the `pulumi_datarobot.CustomModel`, by default these are set to `[]`:
-   ```python
-    # runtime_parameter_values=[],
-    # To use the LLM DataRobot Deployment in your Agent, uncomment the line below
-    runtime_parameter_values=llm_datarobot_app_runtime_parameters,
-    ```
-5. In the `custom_model/model-metadata.yaml` file, ensure that the `ENABLE_LLM_GATEWAY_INFERENCE` has
-the default value set to `false`.
-6. In the `custom_model/custom.py` folder uncomment the `drum import`:
-   ```python
-   from datarobot_drum import RuntimeParameters
-   ```
-7. In the `def chat` function you can now see the imported environment variable that you can use:
-    ```python
-    llm_datarobot_deployment_id_from_runtime = RuntimeParameters.get(
-        "LLM_DATAROBOT_DEPLOYMENT_ID"
-    )
-    ```
-
-There are a few import things to consider to allow pulumi to dynamically define IDs across different agents and models.
-
-> - The `LLM_DATAROBOT_DEPLOYMENT_ID` environment variable name is set in the `app_runtime_parameters` at the bottom
-> of the `llm_datarobot.py` file.
-> - If you want to use a different ID you must define this in your `custom_model/model-metadata.yaml`
-> - This variable will be dynamically populated in the `RuntimeParameters` class when the agent is deployed, 
-> which will overwrite the default value set in the `model-metadata.yaml` file.
-
 ## Get help
 
 If you encounter issues or have questions, use one of the following options:

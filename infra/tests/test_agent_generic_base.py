@@ -116,10 +116,7 @@ def test_execution_environment_not_set_and_docker_context(monkeypatch):
     )
     assert kwargs["programming_language"] == "python"
     assert kwargs["name"] == "[unittest] agent_generic_base"
-    assert (
-        kwargs["description"]
-        == "Execution Environment for [unittest] agent_generic_base"
-    )
+    assert kwargs["description"] == "Execution Environment for [unittest] agent_generic_base"  # fmt: skip
     assert "docker_context_path" in kwargs
     assert "docker_image" not in kwargs
     assert kwargs["use_cases"] == ["customModel", "notebook"]
@@ -163,10 +160,7 @@ def test_execution_environment_not_set_with_docker_image(monkeypatch):
     )
     assert kwargs["programming_language"] == "python"
     assert kwargs["name"] == "[unittest] agent_generic_base"
-    assert (
-        kwargs["description"]
-        == "Execution Environment for [unittest] agent_generic_base"
-    )
+    assert kwargs["description"] == "Execution Environment for [unittest] agent_generic_base"  # fmt: skip
     assert "docker_image" in kwargs
     assert "docker_context_path" not in kwargs
     assert kwargs["use_cases"] == ["customModel", "notebook"]
@@ -266,10 +260,7 @@ def test_custom_model_created(monkeypatch):
     args, kwargs = agent_infra.pulumi_datarobot.CustomModel.call_args
     assert kwargs["resource_name"].startswith("Custom Model")
     assert kwargs["name"] == "[unittest] agent_generic_base"
-    assert (
-        kwargs["base_environment_id"]
-        == agent_infra.agent_generic_base_execution_environment.id
-    )
+    assert kwargs["base_environment_id"] == agent_infra.agent_generic_base_execution_environment.id  # fmt: skip
     assert (
         kwargs["base_environment_version_id"]
         == agent_infra.agent_generic_base_execution_environment.version_id
@@ -280,6 +271,41 @@ def test_custom_model_created(monkeypatch):
     assert kwargs["use_case_ids"] == [agent_infra.use_case.id]
     assert isinstance(kwargs["files"], list)
     assert kwargs["runtime_parameter_values"] == []
+
+
+def test_custom_model_created_llm_deployment_id(monkeypatch):
+    """Test that pulumi_datarobot.CustomModel is created with correct arguments when llm deployment id is set."""
+    monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
+    monkeypatch.setenv("LLM_DATAROBOT_DEPLOYMENT_ID", "model_id")
+
+    import importlib
+    import infra.agent_generic_base as agent_infra
+
+    # Reset the mock to clear calls from the initial import
+    agent_infra.pulumi_datarobot.CustomModel.reset_mock()
+    importlib.reload(agent_infra)
+
+    agent_infra.pulumi_datarobot.CustomModel.assert_called_once()
+    args, kwargs = agent_infra.pulumi_datarobot.CustomModel.call_args
+    assert kwargs["resource_name"].startswith("Custom Model")
+    assert kwargs["name"] == "[unittest] agent_generic_base"
+    assert kwargs["base_environment_id"] == agent_infra.agent_generic_base_execution_environment.id  # fmt: skip
+    assert (
+        kwargs["base_environment_version_id"]
+        == agent_infra.agent_generic_base_execution_environment.version_id
+    )
+    assert kwargs["target_type"] == "AgenticWorkflow"
+    assert kwargs["target_name"] == "response"
+    assert kwargs["language"] == "python"
+    assert kwargs["use_case_ids"] == [agent_infra.use_case.id]
+    assert isinstance(kwargs["files"], list)
+    assert kwargs["runtime_parameter_values"] == [
+        agent_infra.pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key="LLM_DATAROBOT_DEPLOYMENT_ID",
+            type="string",
+            value="model_id",
+        ),
+    ]
 
 
 def test_agent_deployment_created_when_env(monkeypatch):
