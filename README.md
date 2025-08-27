@@ -19,6 +19,7 @@ Please ensure your local tools are at or above the minimum versions required.
 | **Pulumi** | >= 3.163.0 | An Infrastructure as Code tool. | [Pulumi installation guide](https://www.pulumi.com/docs/iac/download-install/) |
 | **Taskfile** | >= 3.43.3 | A task runner. | [Taskfile installation guide](https://taskfile.dev/#/installation) |
 
+More information about this stack is [here](docs/uv-task-pulumi.md).
 ## Available templates
 
 This repository includes templates for four popular agent frameworks:
