@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## v0.2.4
+- Improvements to release process.
+- Minor fixes to task environment.
+
 ## v0.2.3
 - Critical fix to custom.py to fix issue with using the LLM gateway when no variable is set.
 

@@ -34,6 +34,16 @@ COPY ./api_tests/docker_context/setup.sh /workspace/setup.sh
 RUN chmod +x /workspace/setup.sh \
     && chown -R appuser:appuser /workspace /home/appuser
 
+# Precache uv plugins for faster test runs
+WORKDIR /workspace/agent_crewai
+RUN task install
+WORKDIR /workspace/agent_generic_base
+RUN task install
+WORKDIR /workspace/agent_langgraph
+RUN task install
+WORKDIR /workspace/agent_llamaindex
+RUN task install
+
 # Set working directory
 WORKDIR /workspace
 
