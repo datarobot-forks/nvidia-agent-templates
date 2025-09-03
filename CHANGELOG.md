@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## v0.2.5
+- Bump agent component to 1.2.4
+- Split up and refactor documentation into multiple files for easier navigation.
+- Add instructions for using the CLI to test agents locally and deployed.
+- Fix quickstart script to properly remove all unused files.
+- Make quickstart script less verbose in the terminal.
+- Fix inconsistent wording in quickstart prompts.
+- Add tasks to run tests locally on rendered templates
+- Add tasks to test the CLI on the base agent locally
+- Bump request timeout to 20 min
+- Fix agent env setup in notebook
+- Remove af-component-agent embedded docs and replace with a link to public docs
+
 ## v0.2.4
 - Improvements to release process.
 - Minor fixes to task environment.

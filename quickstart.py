@@ -11,13 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import logging
 import os
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 from typing import Union
+
+logger = logging.getLogger()
 
 if sys.version_info[0] < 3 or (sys.version_info[0] >= 3 and sys.version_info[1] < 10):
     print("Must be using Python version 3.10 or higher")
@@ -80,20 +82,21 @@ def try_to_remove(path: Union[str, Path]):
         else:
             os.remove(str(path))
     except Exception as e:
-        print(f"Warning: Could not remove {path}: {e}")
+        logger.info(f"Warning: Could not remove {path}: {e}")
 
 
 def remove_agent_environment(agent_name: str):
     """Remove the agent environment if it exists."""
     agent_env_path = work_dir / f"{agent_name}"
     if agent_env_path.exists():
-        print(f"Removing existing agent environment: {agent_env_path}")
+        logger.info(f"Removing existing agent environment: {agent_env_path}")
         try_to_remove(str(agent_env_path))
         try_to_remove(str(work_dir / ".github" / "workflows" / f"{agent_name}-test.yml"))
         try_to_remove(str(work_dir / ".datarobot" / "answers" / f"agent-{agent_name}.yml"))
+        try_to_remove(str(work_dir / "infra" / "feature_flags" / f"{agent_name}.yaml"))
         try_to_remove(str(work_dir / "infra" / "infra" / f"{agent_name}.py"))
         try_to_remove(str(work_dir / f"Taskfile_{agent_name}.yml"))
-        print(f"Removed agent environment: {agent_env_path}")
+        logger.info(f"Removed agent environment: {agent_env_path}")
     else:
         print(f"No existing agent environment found at: {agent_env_path}")
 
@@ -115,6 +118,12 @@ def remove_global_environment_files():
 
     # Remove RELEASE.yaml file
     try_to_remove(str(work_dir / "RELEASE.yaml"))
+
+    # Remove harness pipelines directory if it exists
+    try_to_remove(str(work_dir / ".harness"))
+
+    # Remove api_tests directory if it exists
+    # try_to_remove(str(work_dir / "api_tests"))
 
     # Initialize a new git repository
     # try:
@@ -192,7 +201,7 @@ def main():
         print("task")
 
         print("\nPlease run the following command to set up the agent environment:")
-        print("task setup")
+        print("task install")
 
 
 if __name__ == "__main__":

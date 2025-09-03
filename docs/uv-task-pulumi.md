@@ -1,3 +1,14 @@
+### DataRobot Agent Templates Navigation
+- [Home](/README.md)
+- [Prerequisites](/docs/getting-started-prerequisites.md)
+- [Getting started](/docs/getting-started.md)
+- Developing Agents
+  - [Developing your agent](/docs/developing-agents.md)
+  - [Using the agent CLI](/docs/developing-agents-cli.md)
+  - [Adding python requirements](/docs/developing-agents-python-requirements.md)
+  - [Configuring LLM providers](/docs/developing-agents-llm-providers.md)
+---
+
 # uv
 
 [uv](https://docs.astral.sh/uv/) is a Python **package and project management** solution, combining the features of [poetry](https://python-poetry.org/) and [pipx](https://github.com/pypa/pipx). Written in [Rust](https://www.rust-lang.org/), uv is extremely fast. [Some benchmarks](https://www.digitalocean.com/community/conceptual-articles/uv-python-package-manager) estimate that it is 10x-100x faster than pip or poetry. These benefits make it the best solution for package management in agentic templates.
