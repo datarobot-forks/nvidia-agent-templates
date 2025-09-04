@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## v0.2.7
+- Add documentation and examples for connecting to different LLM providers.
+
+## v0.2.6
+- Deploy an agentic playground and show / export a link to it
+
 ## v0.2.5
 - Bump agent component to 1.2.4
 - Split up and refactor documentation into multiple files for easier navigation.
