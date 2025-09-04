@@ -173,7 +173,7 @@ class AgentE2EHelper:
         fprint("====================================")
         result = self.run_process(
             ["task build -- --yes"],
-            os.path.join(self.repo_path, "infra"),
+            os.path.join(self.repo_path),
         )
         custom_model_rows = [
             row
@@ -188,8 +188,8 @@ class AgentE2EHelper:
         fprint("Running Pulumi up to deploy the agent")
         fprint("=====================================")
         result = self.run_process(
-            [f"export AGENT_DEPLOY=1 && pulumi up -y -s {self.agent_name}"],
-            os.path.join(self.repo_path, "infra"),
+            [f"task deploy -- -y -s {self.agent_name}"],
+            os.path.join(self.repo_path),
         )
         deployment_rows = [
             row

@@ -188,6 +188,39 @@ agent_langgraph_custom_model_endpoint = agent_langgraph_custom_model.id.apply(
     lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/genai/agents/fromCustomModel/{id}/chat/"
 )
 
+agent_langgraph_playground = pulumi_datarobot.Playground(
+    name=agent_langgraph_asset_name,
+    resource_name="Agentic Playground " + agent_langgraph_resource_name,
+    description="Experimentation Playground for " + agent_langgraph_asset_name,
+    use_case_id=use_case.id,
+    playground_type="agentic",
+)
+
+agent_langgraph_blueprint = pulumi_datarobot.LlmBlueprint(
+    name=agent_langgraph_asset_name,
+    resource_name="LLM Blueprint " + agent_langgraph_resource_name,
+    playground_id=agent_langgraph_playground.id,
+    llm_id="chat-interface-custom-model",
+    llm_settings=pulumi_datarobot.LlmBlueprintLlmSettingsArgs(
+        custom_model_id=agent_langgraph_custom_model.id
+    ),
+    prompt_type="ONE_TIME_PROMPT",
+)
+
+datarobot_url = (
+    os.getenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com/api/v2")
+    .rstrip("/")
+    .rstrip("/api/v2")
+)
+
+agent_langgraph_playground_url = pulumi.Output.format(
+    "{0}/usecases/{1}/agentic-playgrounds/{2}/comparison/chats",
+    datarobot_url,
+    use_case.id,
+    agent_langgraph_playground.id,
+)
+
+
 # Export the IDs of the created resources
 pulumi.export("Agent Use Case ID " + agent_langgraph_asset_name, use_case.id)
 pulumi.export(
@@ -203,6 +236,7 @@ pulumi.export(
     "Agent Custom Model Chat Endpoint " + agent_langgraph_asset_name,
     agent_langgraph_custom_model_endpoint,
 )
+pulumi.export("Agent Playground URL " + agent_langgraph_asset_name, agent_langgraph_playground_url)  # fmt: skip
 
 
 agent_langgraph_agent_deployment_id: pulumi.Output[str] = cast(
