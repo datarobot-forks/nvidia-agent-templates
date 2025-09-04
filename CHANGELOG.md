@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## v0.2.8
+- Fix broken documentation links.
+- Improve sections of documentation and add more links to related DataRobot tutorials.
+- Add CODE_OF_CONDUCT and CONTRIBUTING files to the repository.
+- Update release pipeline to properly inherit SHA from the configurations.
+
 ## v0.2.7
 - Add documentation and examples for connecting to different LLM providers.
 

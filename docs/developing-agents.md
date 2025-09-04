@@ -11,7 +11,17 @@
 
 # Developing Agents
 
-Developing an agent is straightforward and a variety of tools and commands are provided to help you. [See the documentation for your chosen framework](./agent_generic_base/README.md) for development-specific guidelines.
+Developing an agent involves editing the `custom_model` source code, and a variety of tools and commands are provided 
+to help you test and deploy your agent during the development process.
+
+For agentic platform specific assistance beyond the scope of the demos, the following links to the agentic platform 
+repositories are available:
+- **CrewAI** - [GitHub](https://github.com/crewAIInc/crewAI)
+- **LangGraph** - [GitHub](https://github.com/langchain-ai/langgraph)
+- **Llama-Index** - [GitHub](https://github.com/run-llama/llama_index)
+
+**You can use the `generic_base` template to build an agent using any framework of your choice. However, you will need 
+to implement the agent logic and structure yourself, as this template does not include any pre-defined agent code.**
 
 ## Modify the agent code
 
@@ -32,26 +42,25 @@ based on the framework for which you are developing.
 The agent template provides you with a simple example that contains 3 agents and 3 tasks. You can modify this code
 to add more agents, tasks, and tools as needed.  Each agent is connected to an LLM provider, which is specified by 
 the `def llm` function in the `agent.py` file. You can modify this function to change the LLM provider or its 
-configuration. See the [Configuring LLM providers](docs/developing-agents-llm-providers.md) documentation for more 
+configuration. See the [Configuring LLM providers](/docs/developing-agents-llm-providers.md) documentation for more 
 details.
 
-## Build and deploy an agent
+## Testing the agent during local development
 
-When you're ready to move your agent to DataRobot, you have two options depending on your needs.
+You can test your agent locally using the development server provided in the template. This allows you to run and debug
+your agent code without deploying it to DataRobot.
 
-### Step 1: Ensure that the environment variables are set
-
-Make sure your `.env` file contains the required DataRobot credentials and configuration:
+To submit a test query to your agent, use the following command from the root directory:
 
 ```bash
-DATAROBOT_API_TOKEN=<Your API Token>
-DATAROBOT_ENDPOINT=https://app.datarobot.com/api/v2
-PULUMI_CONFIG_PASSPHRASE=<Optional passphrase>
+task agent:cli -- execute --user_prompt "Write a document about the history of AI."
 ```
 
-### Choose your deployment option
+This command will run the agent locally and print the output to the console. You can modify the query to test different
+inputs and scenarios. For additional local CLI commands that are available, see the 
+[Using the agent CLI](/docs/developing-agents-cli.md) documentation.
 
-#### Option A: Build a custom model for testing and refinement
+## Build an agent for testing in the DataRobot LLM Playground (Optional)
 
 To create a custom model that can be refined using the DataRobot LLM Playground.
 
@@ -59,9 +68,16 @@ To create a custom model that can be refined using the DataRobot LLM Playground.
 task build
 ```
 
-This command runs the Pulumi infrastructure to create a custom model in DataRobot but does not create a full production deployment. This is significantly faster and is ideal for iterative development and testing.
+This command runs the Pulumi infrastructure to create a custom model in DataRobot but does not create a full 
+production deployment. This is significantly faster for iterative cloud development and testing.
 
-#### Option B: Deploy to production
+For more examples on working with agents in the `DataRobot LLM Playground`, see the 
+[DataRobot Agentic Playground Tutorial](https://docs.datarobot.com/en/docs/gen-ai/genai-agents/agentic-playground.html).
+
+> **NOTE:** The `task build` command will remove any existing deployments. These can be recreated using `task deploy`
+> if they are removed, but the new deployments will have different deployment IDs.
+
+## Deploy an agent for production use
 
 To create a full production-grade deployment:
 
@@ -69,9 +85,20 @@ To create a full production-grade deployment:
 task deploy
 ```
 
-This command builds the custom model and creates a production deployment with the necessary infrastructure, which takes longer but provides a complete production environment.
+This command builds the custom model and creates a production deployment with the necessary infrastructure, 
+which takes longer but provides a complete production environment. The deployment is a standard DataRobot deployment
+which includes full monitoring, logging, and scaling capabilities. For more information about DataRobot deployments,
+see the [DataRobot Deployment documentation](https://docs.datarobot.com/en/docs/mlops/deployment/index.html#deployment).
 
-### Step 3: Manual deployment (Alternative)
+### Viewing tracing and logs for a deployed agent
+
+Once your agent is deployed, you can view the logs and traces in the DataRobot UI. Navigate to the "Deployments" section
+under "Console", select your deployment. Under the "Monitoring" tab, you can view logs, metrics, and traces for your 
+agent. For more information on monitoring deployments and understanding agent traces please see the
+[Deployment Monitoring and Data Exploration Documentation](
+https://docs.datarobot.com/en/docs/workbench/nxt-console/nxt-monitoring/nxt-data-exploration.html).
+
+### Manually Deploying an agent using pulumi terraform (for debugging or refining pulumi terraform code)
 
 If needed, you can manually run the Pulumi commands.
 
@@ -92,7 +119,8 @@ cd ./infra
 pulumi up
 ```
 
-The `AGENT_DEPLOY` environment variable controls whether Pulumi creates only the custom model (`DEPLOY=0`) or both the custom model and a production deployment (`DEPLOY=1`). If not set, Pulumi defaults to full deployment mode.
+The `AGENT_DEPLOY` environment variable controls whether Pulumi creates only the custom model (`DEPLOY=0`) or both 
+the custom model and a production deployment (`DEPLOY=1`). If not set, Pulumi defaults to full deployment mode.
 
 Pulumi will prompt you to confirm the resources to be created or updated.
 
@@ -103,3 +131,9 @@ After deployment, your agent will be available in your DataRobot environment. Yo
 1. Test your deployed agent using `task cli -- execute-deployment`.
 2. Integrate your agent with other DataRobot services.
 3. Monitor usage and performance in the DataRobot dashboard.
+
+You can also find more examples and documentation from specific frameworks to help you build more complex agents,
+add tools, and define workflows and tasks.
+- **CrewAI** - [GitHub](https://github.com/crewAIInc/crewAI)
+- **LangGraph** - [GitHub](https://github.com/langchain-ai/langgraph)
+- **Llama-Index** - [GitHub](https://github.com/run-llama/llama_index)

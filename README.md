@@ -29,7 +29,9 @@
 This repository provides ready-to-use templates for building and deploying AI agents with multi-agent frameworks. 
 These templates streamline the process of setting up your own agents with minimal configuration requirements. These 
 templates support local development and testing, as well as deployment to production environments within DataRobot.
-If you are new to AI agents, we recommend starting with the [Getting Started](/docs/getting-started.md) guide.
+
+If you are new to developing agentic workflows in DataRobot, we recommend starting with the
+[Getting Started](/docs/getting-started.md) guide which will help you create a simple document creation agentic workflow example.
 
 ---
 ### DataRobot Agent Templates Navigation
