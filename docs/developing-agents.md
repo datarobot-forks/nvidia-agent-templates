@@ -7,6 +7,7 @@
   - [Using the agent CLI](/docs/developing-agents-cli.md)
   - [Adding python requirements](/docs/developing-agents-python-requirements.md)
   - [Configuring LLM providers](/docs/developing-agents-llm-providers.md)
+  - [Adding tools to your agent](/docs/developing-agents-tools.md)
 ---
 
 # Developing Agents
@@ -14,11 +15,11 @@
 Developing an agent involves editing the `custom_model` source code, and a variety of tools and commands are provided 
 to help you test and deploy your agent during the development process.
 
-For agentic platform specific assistance beyond the scope of the demos, the following links to the agentic platform 
-repositories are available:
-- **CrewAI** - [GitHub](https://github.com/crewAIInc/crewAI)
-- **LangGraph** - [GitHub](https://github.com/langchain-ai/langgraph)
-- **Llama-Index** - [GitHub](https://github.com/run-llama/llama_index)
+For agentic platform specific assistance beyond the scope of the demos provided in this repository,
+please see the official documentation for each framework:
+- [CrewAI Documentation](https://docs.crewai.com/)
+- [LangGraph Documentation](https://langchain-ai.github.io/langgraph/concepts/why-langgraph/)
+- [Llama-Index Documentation](https://gpt-index.readthedocs.io/en/latest/)
 
 **You can use the `generic_base` template to build an agent using any framework of your choice. However, you will need 
 to implement the agent logic and structure yourself, as this template does not include any pre-defined agent code.**
@@ -134,6 +135,6 @@ After deployment, your agent will be available in your DataRobot environment. Yo
 
 You can also find more examples and documentation from specific frameworks to help you build more complex agents,
 add tools, and define workflows and tasks.
-- **CrewAI** - [GitHub](https://github.com/crewAIInc/crewAI)
-- **LangGraph** - [GitHub](https://github.com/langchain-ai/langgraph)
-- **Llama-Index** - [GitHub](https://github.com/run-llama/llama_index)
+- [CrewAI GitHub Repository](https://github.com/crewAIInc/crewAI)
+- [LangGraph GitHub Repository](https://github.com/langchain-ai/langgraph)
+- [Llama-Index GitHub Repository](https://github.com/run-llama/llama_index)

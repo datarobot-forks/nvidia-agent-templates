@@ -7,6 +7,7 @@
   - [Using the agent CLI](/docs/developing-agents-cli.md)
   - [Adding python requirements](/docs/developing-agents-python-requirements.md)
   - [Configuring LLM providers](/docs/developing-agents-llm-providers.md)
+  - [Adding tools to your agent](/docs/developing-agents-tools.md)
 ---
 
 # Prerequisites
@@ -20,7 +21,7 @@ or your preferred package manager. Please ensure your local tools are at or abov
 | **Pulumi** | >= 3.163.0 | An Infrastructure as Code tool. | [Pulumi installation guide](https://www.pulumi.com/docs/iac/download-install/) |
 | **Taskfile** | >= 3.43.3 | A task runner. | [Taskfile installation guide](https://taskfile.dev/#/installation) |
 
-More information about this stack is [here](docs/uv-task-pulumi.md).
+**More information about this stack is [here](/docs/uv-task-pulumi.md).**
 
 ## Installation instructions
 The following sections provide common installation instructions for each tool, but please refer to the official

@@ -43,18 +43,21 @@ If you are new to developing agentic workflows in DataRobot, we recommend starti
   - [Using the agent CLI](/docs/developing-agents-cli.md)
   - [Adding python requirements](/docs/developing-agents-python-requirements.md)
   - [Configuring LLM providers](/docs/developing-agents-llm-providers.md)
+  - [Adding tools to your agent](/docs/developing-agents-tools.md)
 ---
 
 ## Available templates
 
-This repository includes templates for four popular agent frameworks:
+This repository includes templates for three popular agent frameworks and a generic base template that can 
+be adapted to any framework of your choice. Each template includes a simple example agentic workflow with 3 agents and 
+3 tasks.
 
-| Framework | Description | GitHub Repository |
-|-----------|-------------|-------------------|
-| **CrewAI** | A multi-agent framework with focus on role-based agents, | [GitHub](https://github.com/crewAIInc/crewAI) |
-| **LangGraph** | Multi-agent orchestration with state graphs. | [GitHub](https://github.com/langchain-ai/langgraph) |
-| **Llama-Index** | A framework for building RAG systems. | [GitHub](https://github.com/run-llama/llama_index) |
-| **Generic Base** | A flexible template for any custom framework. | - |
+| Framework        | Description                                              | GitHub Repo | Docs  |
+|------------------|----------------------------------------------------------|-------------|-------|
+| **CrewAI**       | A multi-agent framework with focus on role-based agents, | [GitHub](https://github.com/crewAIInc/crewAI)       | [Docs](https://docs.crewai.com/)|
+| **LangGraph**    | Multi-agent orchestration with state graphs.             | [GitHub](https://github.com/langchain-ai/langgraph) | [Docs](https://langchain-ai.github.io/langgraph/concepts/why-langgraph/)|
+| **Llama-Index**  | A framework for building RAG systems.                    | [GitHub](https://github.com/run-llama/llama_index)  | [Docs](https://gpt-index.readthedocs.io/en/latest/)|
+| **Generic Base** | A flexible template for any custom framework.            | -           | -     |
 
 ## Get help
 

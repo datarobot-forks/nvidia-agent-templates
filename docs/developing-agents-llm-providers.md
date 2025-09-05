@@ -7,6 +7,7 @@
   - [Using the agent CLI](/docs/developing-agents-cli.md)
   - [Adding python requirements](/docs/developing-agents-python-requirements.md)
   - [Configuring LLM providers](/docs/developing-agents-llm-providers.md)
+  - [Adding tools to your agent](/docs/developing-agents-tools.md)
 ---
 
 # LLM Providers

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## v0.2.9
+- Add initial docs for adding basic tools to agents.
+- Add Datarobot Global Tools examples to docs.
+
 ## v0.2.8
 - Fix broken documentation links.
 - Improve sections of documentation and add more links to related DataRobot tutorials.
