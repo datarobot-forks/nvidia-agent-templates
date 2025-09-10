@@ -25,9 +25,11 @@ from auth import initialize_authorization_context
 from datarobot_drum import RuntimeParameters
 from helpers import (
     CustomModelChatResponse,
+    CustomModelStreamingResponse,
     to_custom_model_response,
 )
 from openai.types.chat import CompletionCreateParams
+from typing import Union
 
 
 def maybe_set_env_from_runtime_parameters(key: str) -> None:
@@ -59,7 +61,7 @@ def load_model(code_dir: str) -> str:
 def chat(
     completion_create_params: CompletionCreateParams,
     model: str,
-) -> CustomModelChatResponse:
+) -> Union[CustomModelChatResponse, CustomModelStreamingResponse]:
     """When using the chat endpoint, this function is called.
 
     Agent inputs are in OpenAI message format and defined as the 'user' portion
@@ -97,5 +99,5 @@ def chat(
     agent_result = agent.run(completion_create_params=completion_create_params)
 
     return to_custom_model_response(
-        *agent_result, model=completion_create_params["model"]
+        agent_result, model=completion_create_params["model"]
     )
