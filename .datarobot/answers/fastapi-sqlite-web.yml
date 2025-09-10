@@ -1,0 +1,7 @@
+---
+# Changes here will be overwritten by Copier
+_commit: 3c2446e
+_src_path: git@github.com:datarobot/af-component-fastapi-backend-persistence-sqlite
+base_answers_file: .datarobot/answers/base.yml
+fastapi_answers_file: .datarobot/answers/fastapi-web.yml
+fastapi_app_name: web

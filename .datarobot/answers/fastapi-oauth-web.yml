@@ -1,0 +1,7 @@
+---
+# Changes here will be overwritten by Copier
+_commit: 579c63f
+_src_path: git@github.com:datarobot/af-component-fastapi-backend-oauth
+base_answers_file: .datarobot/answers/base.yml
+fastapi_answers_file: .datarobot/answers/fastapi-web.yml
+fastapi_app_name: web
