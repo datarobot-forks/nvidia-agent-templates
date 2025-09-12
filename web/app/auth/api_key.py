@@ -70,7 +70,7 @@ class DRUser(BaseModel):
 
     def to_profile(self) -> Profile:
         return Profile(
-            id=self.id,
+            sub=self.id,
             email=self.email,
             email_verified=True,
             name=f"{self.first_name or ''} {self.last_name or ''}".strip(),
@@ -83,6 +83,7 @@ class DRUser(BaseModel):
                 tenant_id=self.tenant_id,
                 feature_flags=self.feature_flags,
             ),
+            preferred_username=self.email,
         )
 
 

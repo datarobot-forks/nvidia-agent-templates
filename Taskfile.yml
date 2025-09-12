@@ -8,6 +8,9 @@ includes:
   agent:
     taskfile: ./agent_langgraph/Taskfile.yml
     dir: ./agent_langgraph
+  web:
+    taskfile: ./web/Taskfile.yaml
+    dir: ./web
 tasks:
   default:
     desc: "🗒️ Show all available tasks"
@@ -19,6 +22,7 @@ tasks:
     cmds:
       - echo "Updating agent environment"
       - task: agent:req
+      - task: web:install
       - echo "Updating infra environment"
       - cd ./infra && uv sync --all-extras
     silent: true
@@ -52,4 +56,22 @@ tasks:
     cmds:
       - echo "Running pulumi destroy"
       - "cd ./infra && {{.CLEAN_PYTHON_ENV}} uv run pulumi destroy {{.CLI_ARGS}}"
+    silent: true
+  lint:
+    silent: true
+    desc: "Run all linters."
+    cmds:
+      - task: agent:lint
+      - task: web:lint
+  lint-check:
+    silent: true
+    desc: "Run all checks."
+    cmds:
+      - task: agent:lint-check
+      - task: web:lint-check
+  dev:
+    desc: "🔨Run the fastapi development server"
+    deps:
+      - web:dev-agent
+      - agent:dev
     silent: true

@@ -19,6 +19,61 @@
     {% endfor %}
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <section>
+        <h1>Example Application</h1>
+        <div>Hello {{datarobot_email}}.</div>
+      </section>
+      <section>
+        <h1>Configured OAuth Providers</h1>
+        <div>Your auth providers are as follows.</div>
+        <ol>
+          {% for p in auth_providers %}
+            <li>{{p}}</li>
+          {% endfor %}
+        </ol>
+      </section>
+      <section>
+        <form action="/login-oauth" method="post">
+          <label for="provider-dropdown">Choose a provider:</label>
+          <select id="provider-dropdown" name="provider_id">
+            {% for p, id in auth_providers.items() %}
+              <option value="{{id}}">{{p}}</option>
+            {% endfor %}
+          </select>
+          <input type="submit" value="Login">
+        </form>
+      </section>
+      <section>
+        <h1>Your Tokens</h1>
+        <table>
+          <thead>
+            <th>Provider</th>
+            <th>User Id</th>
+            <th>Token</th>
+            <th>Expiry</th>
+          </thead>
+          <tbody>
+            {% for token in tokens %}
+            <tr>
+              <td>
+                {{token["provider_name"]}}
+              </td>
+              <td>
+                {{token["user_id"]}}
+              </td>
+              <td>
+                {{token["token"]}}
+              </td>
+              <td>
+                {{token["token_expiry"]}}
+              </td>
+            </tr>
+
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+    </div>
   </body>
 </html>

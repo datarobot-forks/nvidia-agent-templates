@@ -11,13 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from fastapi import APIRouter
-
-from .auth import auth_router
-from .chat import chat_router
-
-router = APIRouter(prefix="/v1")
-
-
-router.include_router(auth_router)
-router.include_router(chat_router)

@@ -139,6 +139,11 @@ async def create_db_ctx(db_url: str, log_sql_stmts: bool = False) -> DBCtx:
         # testing DB credentials...
         await conn.execute(text("select '1'"))
 
+        # Testing: no app memory
+        await conn.run_sync(
+            SQLModel.metadata.drop_all,
+        )
+
         await conn.run_sync(
             SQLModel.metadata.create_all
         )  # create_all is a blocking method

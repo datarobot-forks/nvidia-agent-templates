@@ -16,18 +16,26 @@ import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncGenerator
+from typing import Annotated, AsyncGenerator
 
 from datarobot_asgi_middleware import DataRobotASGIMiddleware
-from fastapi import APIRouter, FastAPI, Request
-from fastapi.responses import HTMLResponse
+from datarobot.auth.session import AuthCtx
+from datarobot.auth.typing import Metadata
+from fastapi import APIRouter, FastAPI, Form, Request
+from fastapi.params import Depends
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
+from app.api.v1.auth import logout, oauth_list_providers, oauth_login, validate_dr_api_key
+from app.auth.api_key import DRUser
+from app.auth.ctx import get_access_token, get_auth_ctx, must_get_auth_ctx
 from app.config import Config
 from app.deps import Deps, create_deps
 from app.api import router as api_router
+from app.users.identity import ProviderType
+from app.users.tokens import Tokens
 from core.telemetry.logging import init_logging
 
 base_router = APIRouter()
@@ -95,7 +103,7 @@ def get_manifest_assets(
 
 
 def create_app(
-    title: str = "",
+    title: str = "FastAPI Agentic App",
     config: Config | None = None,
     deps: Deps | None = None,
 ) -> FastAPI:
@@ -139,7 +147,7 @@ def create_app(
         session_cookie=session_cookie_name,
         secret_key=config.session_secret_key,
         max_age=config.session_max_age,
-        https_only=config.session_https_only,
+        https_only=False,  # TODO: just for local testing.
     )
 
     app.include_router(base_router)
@@ -151,9 +159,22 @@ def create_app(
         name="static",
     )
 
+    @app.post("/login-oauth")
+    async def login(
+        request: Request,
+        provider_id: Annotated[str, Form()],
+        dr_user: DRUser = Depends(validate_dr_api_key)
+    ) -> RedirectResponse:
+        oauth_redirect_response = await oauth_login(request=request, provider_id=provider_id)
+        return RedirectResponse(url=oauth_redirect_response.redirect_url)
+
     # This is the final path that serves the React app
     @app.get("{full_path:path}")
-    async def serve_root(request: Request) -> HTMLResponse:
+    async def serve_root(
+        request: Request,
+        dr_user: DRUser = Depends(validate_dr_api_key),
+        auth_ctx: AuthCtx[Metadata] | None = Depends(get_auth_ctx)
+    ) -> HTMLResponse:
         """
         Serve the React index.html for the all routes, injecting ENV variables and fixing asset paths.
         """
@@ -174,6 +195,25 @@ def create_app(
             app_base_url,
         )
 
+        providers = await oauth_list_providers(request)
+
+        providers_by_id = {p.id: p for p in providers.providers}
+
+        tokens = []
+
+        oauth_tokens: Tokens = request.app.state.deps.tokens
+
+        if auth_ctx:
+            for identity in auth_ctx.identities:
+                if identity.provider_type in [ProviderType.GOOGLE, ProviderType.BOX]:
+                    token = await oauth_tokens.get_access_token(identity)
+                    tokens.append({
+                        "provider_name": identity.provider_type,
+                        "user_id": identity.provider_user_id,
+                        "token": 'X' * 4 + token.access_token[-4:],
+                        "token_expiry": token.expires_at.isoformat() if token.expires_at else "N/A",
+                    })
+
         return templates.TemplateResponse(
             request=request,
             name="index.html",
@@ -182,6 +222,9 @@ def create_app(
                 "app_base_url": app_base_url,
                 "js_files": manifest_assets["js"],
                 "css_files": manifest_assets["css"],
+                "datarobot_email": dr_user.email,
+                "auth_providers": {p.name: p.id for p in providers.providers},
+                "tokens": tokens
             },
         )
 

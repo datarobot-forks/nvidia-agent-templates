@@ -18,27 +18,33 @@ from pathlib import Path
 from typing import AsyncGenerator
 from urllib.parse import urlparse
 
+from datarobot.auth.oauth import AsyncOAuthComponent
+
 from app.auth.api_key import APIKeyValidator
 from app.auth.oauth import get_oauth
 from app.config import Config
 from app.db import DBCtx, create_db_ctx
+from app.models.chats import ChatRepository
+from app.models.messages import MessageRepository
 from app.users.identity import IdentityRepository
 from app.users.tokens import Tokens
 from app.users.user import UserRepository
-from datarobot.auth.oauth import AsyncOAuthComponent
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class Deps:
-    api_key_validator: APIKeyValidator
-    auth: AsyncOAuthComponent
     config: Config
     db: DBCtx
-    identity_repo: IdentityRepository
-    tokens: Tokens
     user_repo: UserRepository
+    identity_repo: IdentityRepository
+    chat_repo: ChatRepository
+    message_repo: MessageRepository
+    api_key_validator: APIKeyValidator
+    auth: AsyncOAuthComponent
+    tokens: Tokens
+    upload_path: Path
 
 
 def sqlite_uri_to_path(uri: str) -> Path | None:
@@ -74,6 +80,7 @@ async def create_deps(
         return
 
     # startup routine
+
     # Ensure the directory exists for SQLite database files
     db_path = sqlite_uri_to_path(config.database_uri)
     if db_path:
@@ -82,6 +89,10 @@ async def create_deps(
     db = await create_db_ctx(config.database_uri)
 
     api_key_validator = APIKeyValidator(datarobot_endpoint=config.datarobot_endpoint)
+
+    # Make upload folder
+    upload_path = Path(config.storage_path) / "uploads"
+    upload_path.mkdir(parents=True, exist_ok=True)
 
     if config.test_user_api_key:
         logger.warning(
@@ -101,14 +112,17 @@ async def create_deps(
 
     yield Deps(
         config=config,
+        db=db,
         user_repo=UserRepository(db),
         identity_repo=identity_repo,
+        chat_repo=ChatRepository(db),
+        message_repo=MessageRepository(db),
         api_key_validator=api_key_validator,
         auth=oauth,
         tokens=Tokens(oauth, identity_repo),
-        db=db,
+        upload_path=upload_path,
     )
 
     # shutdown routine
-    await oauth.close()
     await db.shutdown()
+    await oauth.close()

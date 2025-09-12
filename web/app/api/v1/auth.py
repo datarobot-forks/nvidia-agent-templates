@@ -173,6 +173,8 @@ async def oauth_callback(
 
     params = request.query_params
 
+    logger.info("Oauth response", extra=request.query_params)
+
     # Provider returned error (e.g., user cancelled consent)
     if "error" in params:
         err = ErrorSchema(code=ErrorCodes.UNKNOWN_ERROR, message=params["error"])
@@ -182,7 +184,7 @@ async def oauth_callback(
 
     state = params.get("state")
 
-    logger.debug("OAuth callback", extra={"state": state})
+    logger.info("OAuth callback", extra={"state": state})
 
     if not state or "code" not in params:
         err = ErrorSchema(
@@ -194,6 +196,8 @@ async def oauth_callback(
         )
 
     oauth_sess = restore_oauth_session(request, state)
+    
+    logger.info("Oauth session", extra={"session": oauth_sess})
 
     if oauth_sess is None:
         err = ErrorSchema(
