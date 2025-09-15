@@ -13,9 +13,10 @@
 # limitations under the License.
 from typing import Sequence
 
-from app.auth.oauth import OAuthImpl
 from core.config import DataRobotAppFrameworkBaseSettings
 from core.telemetry.logging import FormatType, LogLevel
+
+from app.auth.oauth import OAuthImpl
 
 
 class Config(DataRobotAppFrameworkBaseSettings):

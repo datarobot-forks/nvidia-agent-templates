@@ -36,7 +36,6 @@ optional_dr_api_key_schema = HTTPBearer(
 )
 
 
-
 class DRUser(BaseModel):
     """
     Represents a DataRobot user.

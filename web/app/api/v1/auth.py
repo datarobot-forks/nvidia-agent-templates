@@ -27,7 +27,12 @@ from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError
 
 from app.api.v1.schema import ErrorCodes, ErrorSchema
-from app.auth.api_key import APIKeyValidator, DRUser, dr_api_key_schema, optional_dr_api_key_schema
+from app.auth.api_key import (
+    APIKeyValidator,
+    DRUser,
+    dr_api_key_schema,
+    optional_dr_api_key_schema,
+)
 from app.auth.ctx import AUTH_SESS_KEY, get_auth_ctx, must_get_auth_ctx
 from app.auth.session import restore_oauth_session, store_oauth_sess
 from app.users.identity import AuthSchema, Identity, IdentityUpdate
@@ -196,7 +201,7 @@ async def oauth_callback(
         )
 
     oauth_sess = restore_oauth_session(request, state)
-    
+
     logger.info("Oauth session", extra={"session": oauth_sess})
 
     if oauth_sess is None:
@@ -343,10 +348,12 @@ async def oauth_callback(
 
 async def try_validate_dr_api_key(
     request: Request,
-    credentials: HTTPAuthorizationCredentials | None = Depends(optional_dr_api_key_schema)
+    credentials: HTTPAuthorizationCredentials | None = Depends(
+        optional_dr_api_key_schema
+    ),
 ) -> DRUser | None:
     api_key_validator: APIKeyValidator = request.app.state.deps.api_key_validator
-    
+
     if not credentials:
         return None
 

@@ -14,15 +14,23 @@
 import os
 from contextlib import asynccontextmanager
 from functools import wraps
-from typing import AsyncGenerator, ParamSpec, TypeVar, Protocol, Generic, Callable, Coroutine, Concatenate, cast
+from typing import (
+    AsyncGenerator,
+    Callable,
+    Concatenate,
+    Coroutine,
+    ParamSpec,
+    Protocol,
+    TypeVar,
+    cast,
+)
 
+from core.persistent_fs.dr_file_system import DRFileSystem, calculate_checksum
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
-
-from core.persistent_fs.dr_file_system import DRFileSystem, calculate_checksum
 
 
 def _prepare_persistence_storage(
@@ -88,8 +96,7 @@ T = TypeVar("T", covariant=True)
 
 class Repository(Protocol):
     @property
-    def _db(self) -> DBCtx:
-        ...
+    def _db(self) -> DBCtx: ...
 
 
 R = TypeVar("R", bound=Repository)
@@ -97,7 +104,7 @@ R = TypeVar("R", bound=Repository)
 
 def retry_on_integrity_error(
     f: Callable[Concatenate[R, AsyncSession, P], Coroutine[None, None, T]],
-    retry_count: int = 3
+    retry_count: int = 3,
 ) -> Callable[Concatenate[R, P], Coroutine[None, None, T]]:
     """
     A decorator for a method of a repository that
@@ -121,7 +128,7 @@ def retry_on_integrity_error(
                 attempt += 1
                 try:
                     return await f(self, sess, *args, **kwargs)
-                except IntegrityError as e:
+                except IntegrityError:
                     await sess.rollback()
                     if attempt == retry_count:
                         raise

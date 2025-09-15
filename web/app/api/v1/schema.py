@@ -39,7 +39,7 @@ class ChatCompletionRequest(BaseModel):
     """
     Request schema for chat completions
     """
-    
+
     message: str
     model: str
     chat_id: str | None = None

@@ -73,12 +73,15 @@ class Tokens:
             )
 
         logger.info("found expired access token, refreshing", extra=ctx)
-        logger.info("More nonsense,", extra=dict(
-            provider_id=identity_model.provider_id,
-            identity_id=identity_model.provider_identity_id,
-            refresh_token=identity_model.refresh_token,
-            scope=scope
-        ))
+        logger.info(
+            "More nonsense,",
+            extra=dict(
+                provider_id=identity_model.provider_id,
+                identity_id=identity_model.provider_identity_id,
+                refresh_token=identity_model.refresh_token,
+                scope=scope,
+            ),
+        )
 
         token_data = await self._oauth.refresh_access_token(
             provider_id=identity_model.provider_id,

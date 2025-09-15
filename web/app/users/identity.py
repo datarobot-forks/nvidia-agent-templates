@@ -159,7 +159,7 @@ class IdentityRepository:
             await sess.refresh(identity)
 
         return identity
-    
+
     async def list_identities(self) -> list[Identity]:
         async with self._db.session() as sess:
             query = await sess.exec(select(Identity))

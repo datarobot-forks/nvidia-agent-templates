@@ -34,14 +34,13 @@ from openai.types.chat.chat_completion_user_message_param import (
 from pydantic import ValidationError
 from sqlalchemy.exc import NoResultFound
 
+from app.api.v1.schema import ChatCompletionRequest
 from app.auth.ctx import must_get_auth_ctx
 from app.models.chats import Chat, ChatCreate, ChatRepository
 from app.models.messages import Message, MessageCreate, MessageRepository, Role
-from app.api.v1.schema import ChatCompletionRequest
-from core import getenv
-
 from app.users.identity import ProviderType
 from app.users.tokens import Tokens
+from core import getenv
 
 if TYPE_CHECKING:
     from app.users.user import User, UserRepository
@@ -136,13 +135,13 @@ async def _get_or_create_chat_id(
 async def chat_completion(
     request_data: ChatCompletionRequest,
     request: Request,
-    auth_ctx: AuthCtx[Metadata] = Depends(must_get_auth_ctx)
+    auth_ctx: AuthCtx[Metadata] = Depends(must_get_auth_ctx),
 ) -> Any:
     # Extract parameters from request body
     message = request_data.message
     model = request_data.model
     chat_id = request_data.chat_id
-    
+
     # Get current user's UUID
     current_user = await _get_current_user(
         request.app.state.deps.user_repo, int(auth_ctx.user.id)
@@ -204,7 +203,7 @@ async def chat_completion(
 async def chat_agent_completion(
     request_data: ChatCompletionRequest,
     request: Request,
-    auth_ctx: AuthCtx[Metadata] = Depends(must_get_auth_ctx)
+    auth_ctx: AuthCtx[Metadata] = Depends(must_get_auth_ctx),
 ) -> Any:
     # Get current user's UUID
     current_user = await _get_current_user(
@@ -213,14 +212,12 @@ async def chat_agent_completion(
 
     message = request_data.message
     llm_model = request_data.model
-    chat_id = request_data.chat_id or None
+    chat_id_str = request_data.chat_id or None
 
     chat_repo: ChatRepository = request.app.state.deps.chat_repo
     message_repo: MessageRepository = request.app.state.deps.message_repo
 
-    chat_id, _ = await _get_or_create_chat_id(
-        chat_repo, chat_id, current_user
-    )
+    chat_id, _ = await _get_or_create_chat_id(chat_repo, chat_id_str, current_user)
     await message_repo.create_message(
         MessageCreate(
             chat_id=chat_id,
@@ -252,12 +249,12 @@ async def chat_agent_completion(
         "question": f"{message}",
     }
 
-    token = None
+    oauth_token = None
 
     for identity in auth_ctx.identities:
         if identity.provider_type == ProviderType.GOOGLE:
             oauth_tokens: Tokens = request.app.state.deps.tokens
-            token = await oauth_tokens.get_access_token(identity)
+            oauth_token = await oauth_tokens.get_access_token(identity)
 
     messages: list[ChatCompletionMessageParam] = [
         ChatCompletionUserMessageParam(role="user", content=json.dumps(content)),
@@ -266,7 +263,9 @@ async def chat_agent_completion(
         completion = await client.chat.completions.create(
             model=llm_model,
             messages=messages,
-            extra_body={"google_token": token.access_token} if token else None
+            extra_body={"google_token": oauth_token.access_token}
+            if oauth_token
+            else None,
         )
     llm_message_content = completion.choices[0].message.content or ""
     response_message = await message_repo.create_message(

@@ -13,10 +13,8 @@
 # limitations under the License.
 import os
 import re
-from datetime import datetime
 from typing import Any, Optional, Union
 
-from tools import list_drive_files_tool
 from helpers import create_inputs_from_completion_params
 from langchain_community.chat_models import ChatLiteLLM
 from langchain_core.messages import HumanMessage
@@ -25,6 +23,7 @@ from langgraph.graph.state import CompiledGraph, CompiledStateGraph
 from langgraph.prebuilt import create_react_agent
 from langgraph.types import Command
 from openai.types.chat import CompletionCreateParams
+from tools import list_drive_files_tool
 
 
 class MyAgent:
@@ -142,28 +141,23 @@ class MyAgent:
         return create_react_agent(
             self.llm,
             tools=[list_drive_files_tool(self.google_token)],
-            prompt = self.make_system_prompt(
-"""
+            prompt=self.make_system_prompt(
+                """
 You are a Google Drive assistant helping a user find relevant files in their Drive.
 You have a tool that takes a space-separated list of words to search the name and body 
 of the files for. Your job is to translate the user's question into 3-5 key words, 
 use your tool to search for those key words (separated by spaces) and then return
 the resulting list to the users.
 """.strip()
-            )
+            ),
         )
-    
+
     def task_drive_search(self, state: MessagesState) -> Command[Any]:
         result = self.agent_drive_searcher.invoke(state)
         result["messages"][-1] = HumanMessage(
             content=result["messages"][-1].content, name="drive_node"
-        ) 
-        return Command(
-            update={
-                "messages": result["messages"]
-            },
-            goto=END
         )
+        return Command(update={"messages": result["messages"]}, goto=END)
 
     def graph(self) -> CompiledStateGraph:
         workflow = StateGraph(MessagesState)
@@ -207,7 +201,7 @@ the resulting list to the users.
             "messages": [
                 (
                     "user",
-                    inputs['question'],
+                    inputs["question"],
                 )
             ],
         }

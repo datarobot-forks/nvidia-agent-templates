@@ -176,3 +176,4 @@ cython_debug/
 
 # Pulumi
 pulumi_config.json
+web/.data/database.sqlite

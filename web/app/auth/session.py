@@ -32,7 +32,7 @@ def store_oauth_sess(request: Request, oauth_sess: OAuthFlowSession) -> None:
     Remove all previous, orphaned sessions in order to avoid filling up the session storage with old sessions
     in exceptional situations.
     """
-    
+
     # clean up all previous OAuth sessions for the current provider ID
     for key in list(request.session.keys()):
         if not key.startswith(OAUTH_SESS_KEY_PREFIX):
@@ -49,7 +49,10 @@ def store_oauth_sess(request: Request, oauth_sess: OAuthFlowSession) -> None:
     oauth_sess_key = get_oauth_sess_key(oauth_sess.state)
     request.session[oauth_sess_key] = oauth_sess.model_dump()
 
-    logger.info("Storing OAUHT Sess", extra={"sess_key": oauth_sess_key, "model": oauth_sess.model_dump()})
+    logger.info(
+        "Storing OAUHT Sess",
+        extra={"sess_key": oauth_sess_key, "model": oauth_sess.model_dump()},
+    )
     logger.info("Pre session looks like", extra=request.session)
 
 
