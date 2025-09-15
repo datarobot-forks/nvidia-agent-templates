@@ -14,26 +14,33 @@
 import json
 import logging
 import os
+import markdown
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, AsyncGenerator
+from uuid import UUID
 
 from datarobot_asgi_middleware import DataRobotASGIMiddleware
 from datarobot.auth.session import AuthCtx
 from datarobot.auth.typing import Metadata
 from fastapi import APIRouter, FastAPI, Form, Request
+from fastapi import status
 from fastapi.params import Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.api.v1.auth import logout, oauth_list_providers, oauth_login, validate_dr_api_key
+from app.api.v1.auth import logout, oauth_list_providers, oauth_login, try_validate_dr_api_key, validate_dr_api_key
+from app.api.v1.chat import _get_current_user, _get_or_create_chat_id, chat_agent_completion, chat_completion
+from app.api.v1.schema import ChatCompletionRequest
 from app.auth.api_key import DRUser
-from app.auth.ctx import get_access_token, get_auth_ctx, must_get_auth_ctx
+from app.auth.ctx import get_access_token, get_auth_ctx, may_get_auth_ctx, must_get_auth_ctx
 from app.config import Config
 from app.deps import Deps, create_deps
 from app.api import router as api_router
+from app.models.chats import ChatCreate, ChatRepository
+from app.models.messages import MessageRepository
 from app.users.identity import ProviderType
 from app.users.tokens import Tokens
 from core.telemetry.logging import init_logging
@@ -167,17 +174,57 @@ def create_app(
     ) -> RedirectResponse:
         oauth_redirect_response = await oauth_login(request=request, provider_id=provider_id)
         return RedirectResponse(url=oauth_redirect_response.redirect_url)
+    
+
+    @app.post("/add-chat")
+    async def add_chat(
+        request: Request,
+        chat_box: Annotated[str, Form()],
+        dr_user: DRUser = Depends(validate_dr_api_key),
+        auth_ctx: AuthCtx = Depends(must_get_auth_ctx)
+    ) -> RedirectResponse:
+        await chat_agent_completion(
+            request_data=ChatCompletionRequest(
+                message=chat_box,
+                model="datarobot/azure/gpt-4o-mini",
+                chat_id=str(await _get_single_chat(request, auth_ctx))
+            ),
+            request=request,
+            auth_ctx=auth_ctx
+        )
+        return RedirectResponse(url=request.base_url, status_code=status.HTTP_302_FOUND)
+    
+
+    @app.post("/clear-chat")
+    async def add_chat(
+        request: Request,
+        auth_ctx: AuthCtx = Depends(must_get_auth_ctx)
+    ) -> RedirectResponse:
+        current_user = await _get_current_user(
+            request.app.state.deps.user_repo, int(auth_ctx.user.id)
+        )
+
+        chat_repo: ChatRepository = request.app.state.deps.chat_repo
+
+        for chat in await chat_repo.get_all_chats(current_user):
+            await chat_repo.delete_chat(chat.uuid)
+        
+        return RedirectResponse(url=request.base_url, status_code=status.HTTP_302_FOUND)
+
 
     # This is the final path that serves the React app
     @app.get("{full_path:path}")
     async def serve_root(
         request: Request,
-        dr_user: DRUser = Depends(validate_dr_api_key),
-        auth_ctx: AuthCtx[Metadata] | None = Depends(get_auth_ctx)
+        dr_user: DRUser | None = Depends(try_validate_dr_api_key),
+        auth_ctx: AuthCtx[Metadata] | None = Depends(may_get_auth_ctx)
     ) -> HTMLResponse:
         """
         Serve the React index.html for the all routes, injecting ENV variables and fixing asset paths.
         """
+        if not dr_user:
+            return HTMLResponse(content="<html><body><div>No DR Auth</div>task<body/></html>")
+        
         manifest_path = STATIC_DIR / ".vite" / "manifest.json"
 
         api_port = os.getenv("PORT", "8080")
@@ -197,7 +244,7 @@ def create_app(
 
         providers = await oauth_list_providers(request)
 
-        providers_by_id = {p.id: p for p in providers.providers}
+        google_token = None
 
         tokens = []
 
@@ -207,12 +254,35 @@ def create_app(
             for identity in auth_ctx.identities:
                 if identity.provider_type in [ProviderType.GOOGLE, ProviderType.BOX]:
                     token = await oauth_tokens.get_access_token(identity)
+                    
                     tokens.append({
                         "provider_name": identity.provider_type,
                         "user_id": identity.provider_user_id,
                         "token": 'X' * 4 + token.access_token[-4:],
                         "token_expiry": token.expires_at.isoformat() if token.expires_at else "N/A",
                     })
+
+        if auth_ctx and auth_ctx.user:
+            chat = await _get_single_chat(request, auth_ctx)
+
+            message_repo: MessageRepository = request.app.state.deps.message_repo
+
+            messages = list(await message_repo.get_chat_messages(chat))
+        else:
+            messages = []
+
+        messages.sort(
+            key=lambda m: m.created_at,
+        )
+
+        message_bodies = []
+        for message in messages:
+            content = message.content
+            try:
+                content = markdown.markdown(content)
+            except:
+                pass
+            message_bodies.append(content)
 
         return templates.TemplateResponse(
             request=request,
@@ -224,8 +294,29 @@ def create_app(
                 "css_files": manifest_assets["css"],
                 "datarobot_email": dr_user.email,
                 "auth_providers": {p.name: p.id for p in providers.providers},
-                "tokens": tokens
+                "tokens": tokens,
+                "messages": message_bodies
             },
         )
+
+    async def _get_single_chat(request: Request, auth_ctx: AuthCtx) -> UUID:
+        current_user = await _get_current_user(
+            request.app.state.deps.user_repo, int(auth_ctx.user.id)
+        )
+
+        chat_repo: ChatRepository = request.app.state.deps.chat_repo
+
+        chats = await chat_repo.get_all_chats(current_user)
+
+        if len(chats) > 1:
+            for chat in chats:
+                await chat_repo.delete_chat(chat.uuid)
+            chat, _ = await _get_or_create_chat_id(chat_repo, None, current_user)
+        elif len(chats) == 0:
+            chat, _ = await _get_or_create_chat_id(chat_repo, None, current_user)
+        else:
+            chat = chats[0].uuid
+
+        return chat
 
     return app

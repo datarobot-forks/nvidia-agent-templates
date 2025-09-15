@@ -74,6 +74,26 @@
           </tbody>
         </table>
       </section>
+      <section>
+        <h1>Chat</h1>
+        <div>
+          <form action="/add-chat" method="post">
+            <label for="chat_box">Chat</label>
+            <input type="text" id="chat_box" name="chat_box"></textarea>
+            <button type="submit">Submit</button>
+          </form>
+          <form action="/clear-chat" method="post">
+            <button type="submit">Clear Chat.</button>
+          </form>
+        </div>
+        <div>
+          {% for message in messages %}
+            <div>{{message|safe}}</div>
+            <hr/>
+          {% endfor %}
+        </div>
+        
+      </section>
     </div>
   </body>
 </html>

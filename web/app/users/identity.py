@@ -159,6 +159,12 @@ class IdentityRepository:
             await sess.refresh(identity)
 
         return identity
+    
+    async def list_identities(self) -> list[Identity]:
+        async with self._db.session() as sess:
+            query = await sess.exec(select(Identity))
+
+            return list(query.all())
 
     async def get_identity_by_id(
         self, identity_id: int | None = None, identity_uuid: uuidpkg.UUID | None = None

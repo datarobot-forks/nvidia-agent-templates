@@ -22,6 +22,7 @@ dependencies = [
     "ruff>=0.3.0",
     "sqlmodel>=0.0.24",
     "uvicorn>=0.22.0",
+    "markdown>=3.9"
 ]
 
 [project.optional-dependencies]

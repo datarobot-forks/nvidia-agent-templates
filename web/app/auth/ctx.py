@@ -154,6 +154,14 @@ async def get_auth_ctx(
     return auth_ctx
 
 
+async def may_get_auth_ctx(
+   request: Request, dr_ctx: DRAppCtx = Depends(get_datarobot_ctx)
+) -> AuthCtx[Metadata] | None:
+    try:
+        return await get_auth_ctx(request, dr_ctx)
+    except HTTPException:
+        return None
+
 def must_get_auth_ctx(
     auth_ctx: AuthCtx[Metadata] = Depends(get_auth_ctx),
 ) -> AuthCtx[Metadata]:

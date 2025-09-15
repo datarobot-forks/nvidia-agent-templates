@@ -28,6 +28,14 @@ dr_api_key_schema = HTTPBearer(
     "The key should be passed in the `Authorization` header as `Bearer <api_key>`.",
 )
 
+optional_dr_api_key_schema = HTTPBearer(
+    scheme_name="DataRobot API Key",
+    description="DataRobot API Key for authentication. ",
+    auto_error=False,
+    bearerFormat="The key should be passed in the `Authorization` header as `Bearer <api_key>`.",
+)
+
+
 
 class DRUser(BaseModel):
     """

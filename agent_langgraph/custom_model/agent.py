@@ -16,6 +16,7 @@ import re
 from datetime import datetime
 from typing import Any, Optional, Union
 
+from tools import list_drive_files_tool
 from helpers import create_inputs_from_completion_params
 from langchain_community.chat_models import ChatLiteLLM
 from langchain_core.messages import HumanMessage
@@ -40,6 +41,7 @@ class MyAgent:
         model: Optional[str] = None,
         verbose: Optional[Union[bool, str]] = True,
         timeout: Optional[int] = 90,
+        google_token: str = "",
         **kwargs: Any,
     ):
         """Initializes the MyAgent class with API key, base URL, model, and verbosity settings.
@@ -65,6 +67,7 @@ class MyAgent:
         self.api_base = api_base or os.environ.get("DATAROBOT_ENDPOINT")
         self.model = model
         self.timeout = timeout
+        self.google_token = google_token
         if isinstance(verbose, str):
             self.verbose = verbose.lower() == "true"
         elif isinstance(verbose, bool):
@@ -135,151 +138,37 @@ class MyAgent:
         )
 
     @property
-    def agent_planner(self) -> CompiledGraph:
+    def agent_drive_searcher(self) -> CompiledGraph:
         return create_react_agent(
             self.llm,
-            tools=[],
-            prompt=self.make_system_prompt(
-                "You are a content planner. You are working with an content writer and editor colleague."
-                "\n"
-                "You're working on planning a blog article "
-                "about the topic."
-                "You collect information that helps the "
-                "audience learn something "
-                "and make informed decisions. "
-                "Your work is the basis for "
-                "the Content Writer to write an article on this topic."
-                "\n"
-                "1. Prioritize the latest trends, key players, "
-                "and noteworthy news on the topic.\n"
-                "2. Identify the target audience, considering "
-                "their interests and pain points.\n"
-                "3. Develop a detailed content outline including "
-                "an introduction, key points, and a call to action.\n"
-                "4. Include SEO keywords and relevant data or sources."
-                "\n"
-                "Plan engaging and factually accurate content on the topic."
-                "You must create a comprehensive content plan document "
-                "with an outline, audience analysis, "
-                "SEO keywords, and resources.",
-            ),
+            tools=[list_drive_files_tool(self.google_token)],
+            prompt = self.make_system_prompt(
+"""
+You are a Google Drive assistant helping a user find relevant files in their Drive.
+You have a tool that takes a space-separated list of words to search the name and body 
+of the files for. Your job is to translate the user's question into 3-5 key words, 
+use your tool to search for those key words (separated by spaces) and then return
+the resulting list to the users.
+""".strip()
+            )
         )
-
-    @property
-    def agent_writer(self) -> CompiledGraph:
-        return create_react_agent(
-            self.llm,
-            tools=[],
-            prompt=self.make_system_prompt(
-                "You are a content writer. You are working with an planner and editor colleague."
-                "\n"
-                "You're working on writing "
-                "a new opinion piece about the topic. "
-                "You base your writing on the work of "
-                "the Content Planner, who provides an outline "
-                "and relevant context about the topic. "
-                "You follow the main objectives and "
-                "direction of the outline, "
-                "as provide by the Content Planner. "
-                "You also provide objective and impartial insights "
-                "and back them up with information "
-                "provide by the Content Planner. "
-                "You acknowledge in your opinion piece "
-                "when your statements are opinions "
-                "as opposed to objective statements."
-                "\n"
-                "1. Use the content plan to craft a compelling "
-                "blog post.\n"
-                "2. Incorporate SEO keywords naturally.\n"
-                "3. Sections/Subtitles are properly named "
-                "in an engaging manner.\n"
-                "4. Ensure the post is structured with an "
-                "engaging introduction, insightful body, "
-                "and a summarizing conclusion.\n"
-                "5. Proofread for grammatical errors and "
-                "alignment with the brand's voice.\n"
-                "\n"
-                "Write insightful and factually accurate opinion piece "
-                "about the topic."
-                "You must create a well-written blog post "
-                "in markdown format, ready for publication, "
-                "each section should have 2 or 3 paragraphs.",
-            ),
-        )
-
-    @property
-    def agent_editor(self) -> CompiledGraph:
-        return create_react_agent(
-            self.llm,
-            tools=[],
-            prompt=self.make_system_prompt(
-                "You are a content editor. You are working with an planner and writer colleague."
-                "\n"
-                "You are an editor who receives a blog post "
-                "from the Content Writer. "
-                "Your goal is to review the blog post "
-                "to ensure that it follows journalistic best practices,"
-                "provides balanced viewpoints "
-                "when providing opinions or assertions, "
-                "and also avoids major controversial topics "
-                "or opinions when possible."
-                "\n"
-                "Proofread the given blog post for grammatical errors "
-                "and alignment with the brand's voice."
-                "\n"
-                "Edit a given blog post to align with the writing style "
-                "of the organization."
-                "You must create a well-written blog post in markdown format, "
-                "ready for publication, "
-                "each section should have 2 or 3 paragraphs.",
-            ),
-        )
-
-    def task_plan(self, state: MessagesState) -> Command[Any]:
-        result = self.agent_planner.invoke(state)
+    
+    def task_drive_search(self, state: MessagesState) -> Command[Any]:
+        result = self.agent_drive_searcher.invoke(state)
         result["messages"][-1] = HumanMessage(
-            content=result["messages"][-1].content, name="planner_node"
-        )
+            content=result["messages"][-1].content, name="drive_node"
+        ) 
         return Command(
             update={
-                # share internal message history with other agents
-                "messages": result["messages"],
+                "messages": result["messages"]
             },
-            goto="writer_node",
-        )
-
-    def task_write(self, state: MessagesState) -> Command[Any]:
-        result = self.agent_writer.invoke(state)
-        result["messages"][-1] = HumanMessage(
-            content=result["messages"][-1].content, name="writer_node"
-        )
-        return Command(
-            update={
-                # share internal message history with other agents
-                "messages": result["messages"],
-            },
-            goto="editor_node",
-        )
-
-    def task_edit(self, state: MessagesState) -> Command[Any]:
-        result = self.agent_planner.invoke(state)
-        result["messages"][-1] = HumanMessage(
-            content=result["messages"][-1].content, name="editor_node"
-        )
-        return Command(
-            update={
-                # share internal message history with other agents
-                "messages": result["messages"],
-            },
-            goto=END,
+            goto=END
         )
 
     def graph(self) -> CompiledStateGraph:
         workflow = StateGraph(MessagesState)
-        workflow.add_node("planner_node", self.task_plan)
-        workflow.add_node("writer_node", self.task_write)
-        workflow.add_node("editor_node", self.task_edit)
-        workflow.add_edge(START, "planner_node")
+        workflow.add_node("drive_node", self.task_drive_search)
+        workflow.add_edge(START, "drive_node")
         execution_graph = workflow.compile()
         return execution_graph
 
@@ -308,7 +197,7 @@ class MyAgent:
 
         # If inputs are a string, convert to a dictionary with 'topic' key for this example.
         if isinstance(inputs, str):
-            inputs = {"topic": inputs}
+            inputs = {"question": inputs}
 
         # Print commands may need flush=True to ensure they are displayed in real-time.
         print("Running agent with inputs:", inputs, flush=True)
@@ -318,8 +207,7 @@ class MyAgent:
             "messages": [
                 (
                     "user",
-                    f"The topic is '{inputs['topic']}'. Make sure you find any interesting and relevant"
-                    f"information given the current year is {str(datetime.now().year)}.",
+                    inputs['question'],
                 )
             ],
         }

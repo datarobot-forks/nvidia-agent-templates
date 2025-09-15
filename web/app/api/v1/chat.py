@@ -40,6 +40,9 @@ from app.models.messages import Message, MessageCreate, MessageRepository, Role
 from app.api.v1.schema import ChatCompletionRequest
 from core import getenv
 
+from app.users.identity import ProviderType
+from app.users.tokens import Tokens
+
 if TYPE_CHECKING:
     from app.users.user import User, UserRepository
 
@@ -249,6 +252,13 @@ async def chat_agent_completion(
         "question": f"{message}",
     }
 
+    token = None
+
+    for identity in auth_ctx.identities:
+        if identity.provider_type == ProviderType.GOOGLE:
+            oauth_tokens: Tokens = request.app.state.deps.tokens
+            token = await oauth_tokens.get_access_token(identity)
+
     messages: list[ChatCompletionMessageParam] = [
         ChatCompletionUserMessageParam(role="user", content=json.dumps(content)),
     ]
@@ -256,6 +266,7 @@ async def chat_agent_completion(
         completion = await client.chat.completions.create(
             model=llm_model,
             messages=messages,
+            extra_body={"google_token": token.access_token} if token else None
         )
     llm_message_content = completion.choices[0].message.content or ""
     response_message = await message_repo.create_message(
