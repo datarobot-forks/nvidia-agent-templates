@@ -11,6 +11,9 @@ includes:
   web:
     taskfile: ./web/Taskfile.yaml
     dir: ./web
+  frontend:
+    taskfile: ./frontend_web/Taskfile.yaml
+    dir: ./frontend_web
 tasks:
   default:
     desc: "🗒️ Show all available tasks"
@@ -23,6 +26,7 @@ tasks:
       - echo "Updating agent environment"
       - task: agent:req
       - task: web:install
+      - task: frontend:install
       - echo "Updating infra environment"
       - cd ./infra && uv sync --all-extras
     silent: true
@@ -63,15 +67,27 @@ tasks:
     cmds:
       - task: agent:lint
       - task: web:lint
+      - task: frontend:lint
   lint-check:
     silent: true
     desc: "Run all checks."
     cmds:
       - task: agent:lint-check
       - task: web:lint-check
+      - task: frontend:lint-check
   dev:
     desc: "🔨Run the fastapi development server"
-    deps:
-      - web:dev-agent
-      - agent:dev
+    cmds:
+      - |
+          task web:dev-agent &
+          sleep 5
+          task agent:dev &
+          sleep 3
+          task frontend:dev &
+          sleep 8
+          echo "✅ All servers started!"
+          echo "🔗 Backend: http://localhost:8080"
+          echo "🔗 Frontend: http://localhost:5173"
+          echo "🔗 Agent: http://localhost:8842"
+          wait
     silent: true

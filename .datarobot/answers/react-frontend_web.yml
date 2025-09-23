@@ -1,0 +1,6 @@
+# Changes here will be overwritten by Copier
+_commit: 87f5e07
+_src_path: git@github.com:datarobot/af-component-react
+base_answers_file: .datarobot/answers/base.yml
+fastapi_answers_file: .datarobot/answers/fastapi-web.yml
+react_app_name: frontend_web

@@ -305,7 +305,7 @@ def create_app(
                 "app_base_url": app_base_url,
                 "js_files": manifest_assets["js"],
                 "css_files": manifest_assets["css"],
-                "datarobot_email": dr_user.email if dr_user.email else "External User",
+                "datarobot_email": dr_user.email if dr_user and dr_user.email else "External User",
                 "auth_providers": {p.name: p.id for p in providers.providers},
                 "tokens": tokens,
                 "messages": message_bodies,
