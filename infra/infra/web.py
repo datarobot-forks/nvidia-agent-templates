@@ -11,25 +11,33 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import os
 import re
 import textwrap
 from typing import Final, Sequence
 
 import pulumi
+from .frontend_web import frontend_web
 import pulumi_datarobot
-from datarobot_pulumi_utils.pulumi.stack import PROJECT_NAME
-from datarobot_pulumi_utils.schema.apps import (
-    ApplicationSourceArgs,
-    CustomAppResourceBundles,
-)
+from datarobot_pulumi_utils.schema.apps import ApplicationSourceArgs
+from datarobot_pulumi_utils.schema.apps import CustomAppResourceBundles
 from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
+from datarobot_pulumi_utils.pulumi.stack import PROJECT_NAME
 
-from . import project_dir, use_case
+from . import use_case, project_dir
 from .oauth import app_runtime_parameters as oauth_app_runtime_parameters
+from .llm import app_runtime_parameters as llm_app_runtime_parameters
+from .agent_retrieval_agent import agent_retrieval_agent_app_runtime_parameters
 
 SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
 session_secret_key = os.environ.get(SESSION_SECRET_KEY)
+DATABASE_URI: Final[str] = "DATABASE_URI"
+database_uri = os.environ.get(
+    DATABASE_URI, "sqlite+aiosqlite:////tmp/ttmdocs/.data/talk_to_my_docs.db"
+)
+STORAGE_PATH: Final[str] = "STORAGE_PATH"
+storage_path = os.environ.get(STORAGE_PATH, "/tmp/ttmdocs/.data/storage")
 
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
@@ -43,6 +51,9 @@ EXCLUDE_PATTERNS = [
         r".*\.mypy_cache/.*",
         r".*__pycache__/.*",
         r".*\.pytest_cache/.*",
+        r".*htmlcov/.*",
+        r".*\.data/.*",
+        r".*\.env",
     ]
 ]
 
@@ -96,7 +107,7 @@ def get_web_app_files(
 ) -> list[tuple[str, str]]:
     _prep_metadata_yaml(runtime_parameter_values)
     # Get all files from application path, following symlinks
-    # When we've upgraded to Python 3.13 we can use Path.glob(recurse_symlinks=True)
+    # When we've upgraded to Python 3.13 we can use Path.glob(reduce_symlinks=True)
     # https://docs.python.org/3.13/library/pathlib.html#pathlib.Path.glob
     source_files = []
     for dirpath, dirnames, filenames in os.walk(web_application_path, followlinks=True):
@@ -122,40 +133,64 @@ def get_web_app_files(
 
 
 # Start of Pulumi settings and application infrastructure
-pulumi.export("SESSION_SECRET_KEY", session_secret_key)
-session_secret_cred = pulumi_datarobot.ApiTokenCredential(
-    f" Session Secret Key [{PROJECT_NAME}]",
-    args=pulumi_datarobot.ApiTokenCredentialArgs(
-        api_token=str(session_secret_key),
-    ),
-)
 web_app_env_name: str = "DATAROBOT_APPLICATION_ID"
 web_application_path = project_dir.parent / "web"
 
 web_app_source_args = ApplicationSourceArgs(
-    resource_name=f" [{PROJECT_NAME}]",
+    resource_name=f"Base Application [{PROJECT_NAME}]",
     base_environment_id=RuntimeEnvironments.PYTHON_312_APPLICATION_BASE.value.id,
 ).model_dump(mode="json", exclude_none=True)
 
-web_app_resource_name: str = f" [{PROJECT_NAME}]"
-web_app_runtime_parameters: list[
-    pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs
-] = [
-    parameter
-    for parameter_group in [
-        oauth_app_runtime_parameters,
-    ]
-    for parameter in parameter_group
-] + [
+web_app_resource_name: str = f"Base Application [{PROJECT_NAME}]"
+
+# Set up Runtime Parameters for the Web Application
+
+pulumi.export("SESSION_SECRET_KEY", session_secret_key)
+session_secret_cred = pulumi_datarobot.ApiTokenCredential(
+    f"Base Application Session Secret Key [{PROJECT_NAME}]",
+    args=pulumi_datarobot.ApiTokenCredentialArgs(
+        api_token=str(session_secret_key),
+    ),
+)
+pulumi.export("DATABASE_URI", database_uri)
+database_uri_cred = pulumi_datarobot.ApiTokenCredential(
+    f"Base Application Database URI [{PROJECT_NAME}]",
+    args=pulumi_datarobot.ApiTokenCredentialArgs(
+        api_token=str(database_uri),
+    ),
+)
+
+general_runtime_params = [
     pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
         type="credential",
         key=SESSION_SECRET_KEY,
         value=session_secret_cred.id,
     ),
+    pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
+        type="credential",
+        key=DATABASE_URI,
+        value=database_uri_cred.id,
+    ),
+    pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
+        type="string",
+        key=STORAGE_PATH,
+        value=storage_path,
+    ),
 ]
 
+web_app_runtime_parameters: list[
+    pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs
+] = (
+    llm_app_runtime_parameters
+    + oauth_app_runtime_parameters
+    + agent_retrieval_agent_app_runtime_parameters
+    + general_runtime_params
+)
+
 web_app_source = pulumi_datarobot.ApplicationSource(
-    files=get_web_app_files(runtime_parameter_values=web_app_runtime_parameters),
+    files=frontend_web.stdout.apply(
+        lambda _: get_web_app_files(runtime_parameter_values=web_app_runtime_parameters)
+    ),
     runtime_parameter_values=web_app_runtime_parameters,
     resources=pulumi_datarobot.ApplicationSourceResourcesArgs(
         resource_label=CustomAppResourceBundles.CPU_XL.value.id,
@@ -174,18 +209,4 @@ pulumi.export(web_app_env_name, web_app.id)
 pulumi.export(
     web_app_resource_name,
     web_app.application_url,
-)
-
-DATABASE_URI: Final[str] = "DATABASE_URI"
-database_uri = os.environ.get(
-    DATABASE_URI, "sqlite+aiosqlite:////tmp/ttmdocs/.data/talk_to_my_docs.db"
-)
-
-pulumi.export("DATABASE_URI", database_uri)
-
-database_uri_cred = pulumi_datarobot.ApiTokenCredential(
-    f"Talk to My Docs Database URI [{PROJECT_NAME}]",
-    args=pulumi_datarobot.ApiTokenCredentialArgs(
-        api_token=str(database_uri),
-    ),
 )
