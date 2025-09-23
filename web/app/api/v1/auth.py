@@ -26,6 +26,8 @@ from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError
 
+from datarobot.auth.oauth import AsyncOAuthComponent
+
 from app.api.v1.schema import ErrorCodes, ErrorSchema
 from app.auth.api_key import (
     APIKeyValidator,
@@ -118,7 +120,7 @@ async def oauth_list_providers(request: Request) -> OAuthProviderListSchema:
     """
     List available OAuth providers.
     """
-    auth = request.app.state.deps.auth
+    auth: AsyncOAuthComponent  = request.app.state.deps.auth
     providers = await auth.get_providers()
 
     return OAuthProviderListSchema(providers=providers)

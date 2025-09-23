@@ -16,44 +16,19 @@ import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Annotated, AsyncGenerator
-from uuid import UUID
+from typing import AsyncGenerator
 
-import markdown
 from core.telemetry.logging import init_logging
-from datarobot.auth.session import AuthCtx
-from datarobot.auth.typing import Metadata
 from datarobot_asgi_middleware import DataRobotASGIMiddleware
-from fastapi import APIRouter, Depends, FastAPI, Form, Request, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, FastAPI, Request
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.api import router as api_router
-from app.api.v1.auth import (
-    oauth_list_providers,
-    oauth_login,
-    try_validate_dr_api_key,
-    validate_dr_api_key,
-)
-from app.api.v1.chat import (
-    _get_current_user,
-    _get_or_create_chat_id,
-    chat_agent_completion,
-)
-from app.api.v1.schema import ChatCompletionRequest
-from app.auth.api_key import DRUser
-from app.auth.ctx import (
-    may_get_auth_ctx,
-    must_get_auth_ctx,
-)
 from app.config import Config
 from app.deps import Deps, create_deps
-from app.models.chats import ChatRepository
-from app.models.messages import MessageRepository
-from app.users.identity import ProviderType
-from app.users.tokens import Tokens
 
 base_router = APIRouter()
 
@@ -120,7 +95,7 @@ def get_manifest_assets(
 
 
 def create_app(
-    title: str = "FastAPI Agentic App",
+    title: str = "Example Template",
     config: Config | None = None,
     deps: Deps | None = None,
 ) -> FastAPI:
@@ -164,7 +139,7 @@ def create_app(
         session_cookie=session_cookie_name,
         secret_key=config.session_secret_key,
         max_age=config.session_max_age,
-        https_only=False,  # TODO: just for local testing.
+        https_only=config.session_https_only,
     )
 
     app.include_router(base_router)
@@ -176,66 +151,12 @@ def create_app(
         name="static",
     )
 
-    @app.post("/login-oauth")
-    async def login(
-        request: Request,
-        provider_id: Annotated[str, Form()],
-        dr_user: DRUser = Depends(validate_dr_api_key),
-    ) -> RedirectResponse:
-        oauth_redirect_response = await oauth_login(
-            request=request, provider_id=provider_id
-        )
-        return RedirectResponse(url=oauth_redirect_response.redirect_url)
-
-    @app.post("/add-chat")
-    async def add_chat(
-        request: Request,
-        chat_box: Annotated[str, Form()],
-        dr_user: DRUser = Depends(validate_dr_api_key),
-        auth_ctx: AuthCtx[Metadata] = Depends(must_get_auth_ctx),
-    ) -> RedirectResponse:
-        await chat_agent_completion(
-            request_data=ChatCompletionRequest(
-                message=chat_box,
-                model="datarobot/azure/gpt-4o-mini",
-                chat_id=str(await _get_single_chat(request, auth_ctx)),
-            ),
-            request=request,
-            auth_ctx=auth_ctx,
-        )
-        return RedirectResponse(url=request.base_url, status_code=status.HTTP_302_FOUND)
-
-    @app.post("/clear-chat")
-    async def clear_chat(
-        request: Request, auth_ctx: AuthCtx[Metadata] = Depends(must_get_auth_ctx)
-    ) -> RedirectResponse:
-        current_user = await _get_current_user(
-            request.app.state.deps.user_repo, int(auth_ctx.user.id)
-        )
-
-        chat_repo: ChatRepository = request.app.state.deps.chat_repo
-
-        for chat in await chat_repo.get_all_chats(current_user):
-            await chat_repo.delete_chat(chat.uuid)
-
-        return RedirectResponse(url=request.base_url, status_code=status.HTTP_302_FOUND)
-
     # This is the final path that serves the React app
     @app.get("{full_path:path}")
-    async def serve_root(
-        request: Request,
-        dr_user: DRUser | None = Depends(try_validate_dr_api_key),
-        auth_ctx: AuthCtx[Metadata] | None = Depends(may_get_auth_ctx),
-    ) -> HTMLResponse:
+    async def serve_root(request: Request) -> HTMLResponse:
         """
         Serve the React index.html for the all routes, injecting ENV variables and fixing asset paths.
         """
-
-        if not auth_ctx:
-            return HTMLResponse(
-                content="<html><body><div>No DR Auth</div>task<body/></html>"
-            )
-
         manifest_path = STATIC_DIR / ".vite" / "manifest.json"
 
         api_port = os.getenv("PORT", "8080")
@@ -253,50 +174,6 @@ def create_app(
             app_base_url,
         )
 
-        providers = await oauth_list_providers(request)
-
-        tokens = []
-
-        oauth_tokens: Tokens = request.app.state.deps.tokens
-
-        if auth_ctx:
-            for identity in auth_ctx.identities:
-                if identity.provider_type in [ProviderType.GOOGLE, ProviderType.BOX]:
-                    token = await oauth_tokens.get_access_token(identity)
-
-                    tokens.append(
-                        {
-                            "provider_name": identity.provider_type,
-                            "user_id": identity.provider_user_id,
-                            "token": "X" * 4 + token.access_token[-4:],
-                            "token_expiry": token.expires_at.isoformat()
-                            if token.expires_at
-                            else "N/A",
-                        }
-                    )
-
-        if auth_ctx and auth_ctx.user:
-            chat = await _get_single_chat(request, auth_ctx)
-
-            message_repo: MessageRepository = request.app.state.deps.message_repo
-
-            messages = list(await message_repo.get_chat_messages(chat))
-        else:
-            messages = []
-
-        messages.sort(
-            key=lambda m: m.created_at,
-        )
-
-        message_bodies = []
-        for message in messages:
-            content = message.content
-            try:
-                content = markdown.markdown(content)
-            except BaseException:
-                pass
-            message_bodies.append(content)
-
         return templates.TemplateResponse(
             request=request,
             name="index.html",
@@ -305,31 +182,7 @@ def create_app(
                 "app_base_url": app_base_url,
                 "js_files": manifest_assets["js"],
                 "css_files": manifest_assets["css"],
-                "datarobot_email": dr_user.email if dr_user and dr_user.email else "External User",
-                "auth_providers": {p.name: p.id for p in providers.providers},
-                "tokens": tokens,
-                "messages": message_bodies,
             },
         )
-
-    async def _get_single_chat(request: Request, auth_ctx: AuthCtx[Metadata]) -> UUID:
-        current_user = await _get_current_user(
-            request.app.state.deps.user_repo, int(auth_ctx.user.id)
-        )
-
-        chat_repo: ChatRepository = request.app.state.deps.chat_repo
-
-        chats = await chat_repo.get_all_chats(current_user)
-
-        if len(chats) > 1:
-            for c in chats:
-                await chat_repo.delete_chat(c.uuid)
-            chat, _ = await _get_or_create_chat_id(chat_repo, None, current_user)
-        elif len(chats) == 0:
-            chat, _ = await _get_or_create_chat_id(chat_repo, None, current_user)
-        else:
-            chat = chats[0].uuid
-
-        return chat
 
     return app

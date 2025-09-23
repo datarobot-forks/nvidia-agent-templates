@@ -80,7 +80,7 @@ async def get_auth_ctx(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=ErrorSchema(
                     code=ErrorCodes.DATAROBOT_USER_ERROR,
-                    message="Could not validate DataRobot User API key.",
+                    message=f"Could not validate DataRobot User API key. {dr_ctx.api_key}",
                 ).model_dump(),
             )
 

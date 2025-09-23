@@ -76,18 +76,9 @@ tasks:
       - task: web:lint-check
       - task: frontend:lint-check
   dev:
-    desc: "🔨Run the fastapi development server"
-    cmds:
-      - |
-          task web:dev-agent &
-          sleep 5
-          task agent:dev &
-          sleep 3
-          task frontend:dev &
-          sleep 8
-          echo "✅ All servers started!"
-          echo "🔗 Backend: http://localhost:8080"
-          echo "🔗 Frontend: http://localhost:5173"
-          echo "🔗 Agent: http://localhost:8842"
-          wait
+    desc: "Run all dev."
+    deps:
+      - agent:dev
+      - frontend:dev
+      - web:dev-agent
     silent: true

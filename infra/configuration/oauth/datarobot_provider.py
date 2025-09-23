@@ -34,62 +34,48 @@ box_client_secret = os.environ.get(BOX_CLIENT_SECRET)
 
 app_runtime_parameters = []
 
-if providers := os.environ.get(DATAROBOT_OAUTH_PROVIDERS):
-    x: str = providers
 
-    app_runtime_parameters += [
-        datarobot.ApplicationSourceRuntimeParameterValueArgs(
-            type="string",
-            key=DATAROBOT_OAUTH_PROVIDERS,
-            value=x,
-        )
-    ]
-    export("DATAROBOT_OAUTH_PROVIDERS", x)
+# DataRobot OAuth Providers Service
+provider_ids: list[pulumi.Output[str]] = []
 
-else:
-    # DataRobot OAuth Providers Service
-    provider_ids: list[pulumi.Output[str]] = []
+if google_client_id and google_client_secret:
+    pulumi.info(
+        "Google OAuth credentials found, adding to application runtime parameters."
+    )
+    pulumi.export("Google Client ID", google_client_id)
 
+    google_oauth = datarobot.AppOauth(
+        f"Talk to My Docs Google Client Secret [{PROJECT_NAME}]",
+        type="google",
+        client_id=google_client_id,
+        client_secret=google_client_secret,
+    )
+    pulumi.export("Google OAuth Provider ID", google_oauth.id)
+    provider_ids.append(google_oauth.id)
 
+if box_client_id and box_client_secret:
+    pulumi.info("Box credentials found, adding to application runtime parameters.")
+    pulumi.export("Box Client ID", box_client_id)
 
-    if google_client_id and google_client_secret:
-        pulumi.info(
-            "Google OAuth credentials found, adding to application runtime parameters."
-        )
-        pulumi.export("Google Client ID", google_client_id)
-
-        google_oauth = datarobot.AppOauth(
-            f"Talk to My Docs Google Client Secret [{PROJECT_NAME}]",
-            type="google",
-            client_id=google_client_id,
-            client_secret=google_client_secret,
-        )
-        pulumi.export("Google OAuth Provider ID", google_oauth.id)
-        provider_ids.append(google_oauth.id)
-
-    if box_client_id and box_client_secret:
-        pulumi.info("Box credentials found, adding to application runtime parameters.")
-        pulumi.export("Box Client ID", box_client_id)
-
-        box_oauth = datarobot.AppOauth(
-            f"Talk to My Docs Box Client Secret [{PROJECT_NAME}]",
-            type="box",
-            client_id=box_client_id,
-            client_secret=box_client_secret,
-        )
-
-        pulumi.export("Box OAuth Provider ID", box_oauth.id)
-        provider_ids.append(box_oauth.id)
-
-    oauth_providers_output: pulumi.Output[str] = pulumi.Output.all(*provider_ids).apply(
-        lambda ids: json.dumps(ids)
+    box_oauth = datarobot.AppOauth(
+        f"Talk to My Docs Box Client Secret [{PROJECT_NAME}]",
+        type="box",
+        client_id=box_client_id,
+        client_secret=box_client_secret,
     )
 
-    app_runtime_parameters += [
-        datarobot.ApplicationSourceRuntimeParameterValueArgs(
-            type="string",
-            key=DATAROBOT_OAUTH_PROVIDERS,
-            value=oauth_providers_output,
-        )
-    ]
-    export("DATAROBOT_OAUTH_PROVIDERS", oauth_providers_output)
+    pulumi.export("Box OAuth Provider ID", box_oauth.id)
+    provider_ids.append(box_oauth.id)
+
+oauth_providers_output: pulumi.Output[str] = pulumi.Output.all(*provider_ids).apply(
+    lambda ids: json.dumps(ids)
+)
+
+app_runtime_parameters += [
+    datarobot.ApplicationSourceRuntimeParameterValueArgs(
+        type="string",
+        key=DATAROBOT_OAUTH_PROVIDERS,
+        value=oauth_providers_output,
+    )
+]
+export("DATAROBOT_OAUTH_PROVIDERS", oauth_providers_output)

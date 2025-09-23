@@ -13,49 +13,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { AppSidebar } from '@/components/layout/app-sidebar.tsx';
+import { AppHeader } from '@/components/layout/app-header';
+import Pages from '@/pages';
+import { SidebarProvider } from '@/components/ui/sidebar';
+import { Spinner } from '@/components/ui/spinner';
 
-import { useState, useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/assets/vite.svg'
-import './App.css'
+
+import './App.css';
+import { useCurrentUser } from '@/api/auth/hooks.ts';
+import { Toaster } from '@/components/ui/toast';
+import { RenameChatModal } from '@/components/custom/rename-chat-modal.tsx';
 
 function App() {
-  const [count, setCount] = useState(0)
-  const [welcome, setWelcome] = useState('Loading...')
+    const { isLoading: isUserLoading } = useCurrentUser();
 
-  const fetchWelcome = async () => {
-    const response = await fetch('./api/v1/welcome')
-    const data = await response.json()
-    setWelcome(data.message)
-  }
-  useEffect(() => {
-    fetchWelcome()
-  }, [])
-
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React: {welcome}</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    return (
+        <SidebarProvider>
+            <div className="flex flex-1 min-h-screen dark">
+                <AppSidebar />
+                <div className="flex flex-col flex-1 h-screen">
+                    {isUserLoading ? (
+                        <div
+                            className="flex items-center gap-3 h-screen justify-center"
+                            data-testid="app-loader"
+                        >
+                            <Spinner>Loading...</Spinner>
+                        </div>
+                    ) : (
+                        <>
+                            <AppHeader />
+                            <Pages />
+                            <Toaster />
+                            <RenameChatModal />
+                        </>
+                    )}
+                </div>
+            </div>
+        </SidebarProvider>
+    );
 }
 
-export default App
+export default App;

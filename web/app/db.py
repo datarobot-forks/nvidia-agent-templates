@@ -133,7 +133,7 @@ def retry_on_integrity_error(
                     if attempt == retry_count:
                         raise
 
-    return inner
+    return inner  # type:ignore[return-value]
 
 
 async def create_db_ctx(db_url: str, log_sql_stmts: bool = False) -> DBCtx:
