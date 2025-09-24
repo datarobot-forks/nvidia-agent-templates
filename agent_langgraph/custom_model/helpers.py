@@ -14,7 +14,7 @@
 import json
 import time
 import uuid
-from typing import Any, Union
+from typing import Any, Union, Generator, Iterator
 
 from langchain_core.messages import ToolMessage
 from openai.types import CompletionUsage
@@ -22,13 +22,19 @@ from openai.types.chat import (
     ChatCompletion,
     ChatCompletionMessage,
     CompletionCreateParams,
+    ChatCompletionChunk,
 )
 from openai.types.chat.chat_completion import Choice
+from openai.types.chat.chat_completion_chunk import ChoiceDelta
 from ragas import MultiTurnSample
 from ragas.integrations.langgraph import convert_to_ragas_messages
 
 
 class CustomModelChatResponse(ChatCompletion):
+    pipeline_interactions: str | None = None
+
+
+class CustomModelStreamingResponse(Iterator[ChatCompletionChunk]):
     pipeline_interactions: str | None = None
 
 
@@ -85,6 +91,47 @@ def create_completion_from_response_text(
     return completion
 
 
+def create_streaming_chunk(
+    content: str,
+    completion_id: str,
+    model: str,
+    created: int,
+    finish_reason: str | None = None,
+    pipeline_interactions: str | None = None,
+) -> ChatCompletionChunk:
+    """Create a streaming chunk for the response."""
+    from openai.types.chat.chat_completion_chunk import Choice as ChunkChoice
+    
+    # Create the delta with proper typing
+    if finish_reason == "stop":
+        # For final chunk, only include role in delta as per OpenAI spec
+        delta = ChoiceDelta(role="assistant")
+    else:
+        # For content chunks, include content in delta
+        delta = ChoiceDelta(role="assistant", content=content)
+    
+    choice = ChunkChoice(
+        index=0,
+        delta=delta,
+        finish_reason=finish_reason,
+    )
+    
+    chunk = ChatCompletionChunk(
+        id=completion_id,
+        object="chat.completion.chunk",
+        created=created,
+        model=model,
+        choices=[choice],
+    )
+    
+    # Add pipeline_interactions as a simple attribute
+    # DRUM should accept this even though it's not part of the base spec
+    if pipeline_interactions:
+        setattr(chunk, 'pipeline_interactions', pipeline_interactions)
+    
+    return chunk
+
+
 def _extract_pipeline_interactions(events: list[dict[str, Any]]) -> MultiTurnSample:
     """Extract the pipeline interactions from the events."""
     messages = []
@@ -101,9 +148,8 @@ def _extract_pipeline_interactions(events: list[dict[str, Any]]) -> MultiTurnSam
     return pipeline_interactions
 
 
-def to_custom_model_response(
+def to_non_streaming_response(
     events: list[dict[str, Any]],
-    usage_metrics: dict[str, int],
     model: str,
 ) -> CustomModelChatResponse:
     """Convert the Langgraph agent output to a custom model response."""
@@ -116,6 +162,11 @@ def to_custom_model_response(
     # Tool Call Accuracy).
     # If you are not interested in these metrics, you can also pass None instead.
     # This will reduce the size of the response significantly.
+    usage_metrics = {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0,
+    }
     response = create_completion_from_response_text(
         response_text=output,
         usage_metrics=usage_metrics,
@@ -123,3 +174,67 @@ def to_custom_model_response(
         pipeline_interactions=_extract_pipeline_interactions(events),
     )
     return response
+
+
+def to_streaming_response(
+    event_stream: Generator[Any, None, None],
+    model: str,
+) -> Iterator[ChatCompletionChunk]:
+    """Convert a stream of LangGraph events into streaming chat completion chunks.
+    
+    Args:
+        event_stream: Generator that yields LangGraph events
+        model: The model name to include in chunks
+        
+    Returns:
+        Iterator of ChatCompletionChunk objects for streaming response
+    """
+    completion_id = str(uuid.uuid4())
+    created = int(time.time())
+    events = []
+    
+    # Process events as they come in and yield chunks immediately
+    for event in event_stream:
+        events.append(event)
+        
+        # Extract content from the current event
+        node_name = next(iter(event))
+        messages = event[node_name]["messages"]
+        
+        if messages:
+            content = str(messages[-1].content)
+            
+            # Create and yield a streaming chunk immediately
+            chunk = create_streaming_chunk(
+                content=content,
+                completion_id=completion_id,
+                model=model,
+                created=created,
+                finish_reason=None,  # Will be set to "stop" in final chunk
+            )
+            yield chunk
+    
+    # Send final chunk with finish_reason and pipeline_interactions
+    if events:
+        pipeline_interactions = _extract_pipeline_interactions(events)
+        pipeline_interactions_json = pipeline_interactions.model_dump_json() if pipeline_interactions else None
+        
+        final_chunk = create_streaming_chunk(
+            content="",  # Final chunk has empty content per OpenAI spec
+            completion_id=completion_id,
+            model=model,
+            created=created,
+            finish_reason="stop",
+            pipeline_interactions=pipeline_interactions_json,
+        )
+        yield final_chunk
+
+
+def to_custom_model_response(
+    events: list[dict[str, Any]],
+    model: str,
+) -> Union[CustomModelChatResponse, Iterator[ChatCompletionChunk]]:
+    if isinstance(events, Generator):
+        return to_streaming_response(events, model)
+    else:
+        return to_non_streaming_response(events, model)

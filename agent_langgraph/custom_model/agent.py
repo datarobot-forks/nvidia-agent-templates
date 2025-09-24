@@ -185,6 +185,9 @@ the resulting list to the users.
             tuple[list[Any], CrewOutput]: A tuple containing a list of messages (events) and the crew output.
 
         """
+        # Check if streaming is requested from the completion params
+        streaming = completion_create_params.get("stream", False)
+
         # Example helper for extracting inputs as a json from the completion_create_params["messages"]
         # field with the 'user' role: (e.g. {"topic": "Artificial Intelligence"})
         inputs = create_inputs_from_completion_params(completion_create_params)
@@ -214,11 +217,16 @@ the resulting list to the users.
             debug=True,
         )
 
-        # Execute the graph and store calls to the agent in events
-        events = [event for event in graph_stream]
-        usage_metrics: dict[str, int] = {
-            "completion_tokens": 0,
-            "prompt_tokens": 0,
-            "total_tokens": 0,
-        }
-        return events, usage_metrics
+        if streaming:
+            # For streaming, yield events as they happen
+            def event_generator():
+                events = []
+                for event in graph_stream:
+                    events.append(event)
+                    yield event
+            
+            return event_generator()
+        else:
+            # For non-streaming, collect all events
+            events = [event for event in graph_stream]
+            return events
