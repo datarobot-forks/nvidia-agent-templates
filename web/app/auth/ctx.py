@@ -1,4 +1,4 @@
-# Copyright  DataRobot, Inc.
+# Copyright 2025 DataRobot, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ async def get_auth_ctx(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=ErrorSchema(
                     code=ErrorCodes.DATAROBOT_USER_ERROR,
-                    message=f"Could not validate DataRobot User API key. {dr_ctx.api_key}",
+                    message="Could not validate DataRobot User API key.",
                 ).model_dump(),
             )
 

@@ -1,4 +1,4 @@
-# Copyright  DataRobot, Inc.
+# Copyright 2025 DataRobot, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,15 +73,6 @@ class Tokens:
             )
 
         logger.info("found expired access token, refreshing", extra=ctx)
-        logger.info(
-            "More nonsense,",
-            extra=dict(
-                provider_id=identity_model.provider_id,
-                identity_id=identity_model.provider_identity_id,
-                refresh_token=identity_model.refresh_token,
-                scope=scope,
-            ),
-        )
 
         token_data = await self._oauth.refresh_access_token(
             provider_id=identity_model.provider_id,

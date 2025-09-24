@@ -1,4 +1,4 @@
-# Copyright  DataRobot, Inc.
+# Copyright 2025 DataRobot, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,13 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import logging
 from typing import Final
 
 from datarobot.auth.oauth import OAuthFlowSession
 from fastapi import Request
-
-logger = logging.getLogger(name=__name__)
 
 OAUTH_SESS_KEY_PREFIX: Final[str] = "oauth_sess_"
 
@@ -32,7 +29,6 @@ def store_oauth_sess(request: Request, oauth_sess: OAuthFlowSession) -> None:
     Remove all previous, orphaned sessions in order to avoid filling up the session storage with old sessions
     in exceptional situations.
     """
-
     # clean up all previous OAuth sessions for the current provider ID
     for key in list(request.session.keys()):
         if not key.startswith(OAUTH_SESS_KEY_PREFIX):
@@ -49,12 +45,6 @@ def store_oauth_sess(request: Request, oauth_sess: OAuthFlowSession) -> None:
     oauth_sess_key = get_oauth_sess_key(oauth_sess.state)
     request.session[oauth_sess_key] = oauth_sess.model_dump()
 
-    logger.info(
-        "Storing OAUHT Sess",
-        extra={"sess_key": oauth_sess_key, "model": oauth_sess.model_dump()},
-    )
-    logger.info("Pre session looks like", extra=request.session)
-
 
 def restore_oauth_session(request: Request, state: str) -> OAuthFlowSession | None:
     """
@@ -62,8 +52,6 @@ def restore_oauth_session(request: Request, state: str) -> OAuthFlowSession | No
     """
     oauth_sess = None  # you might open the endpoint directly without properly passing through the whole OAuth flow
     oauth_sess_key = get_oauth_sess_key(state)
-
-    logger.info("Session looks like", extra=request.session)
 
     if raw_sess := request.session.pop(oauth_sess_key, {}):  # clean up the session
         oauth_sess = OAuthFlowSession(**raw_sess)

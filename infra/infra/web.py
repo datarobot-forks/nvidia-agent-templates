@@ -27,8 +27,7 @@ from datarobot_pulumi_utils.pulumi.stack import PROJECT_NAME
 
 from . import use_case, project_dir
 from .oauth import app_runtime_parameters as oauth_app_runtime_parameters
-from .llm import app_runtime_parameters as llm_app_runtime_parameters
-from .agent_retrieval_agent import agent_retrieval_agent_app_runtime_parameters
+from .agent_langgraph import agent_langgraph_app_runtime_parameters
 
 SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
 session_secret_key = os.environ.get(SESSION_SECRET_KEY)
@@ -181,9 +180,8 @@ general_runtime_params = [
 web_app_runtime_parameters: list[
     pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs
 ] = (
-    llm_app_runtime_parameters
-    + oauth_app_runtime_parameters
-    + agent_retrieval_agent_app_runtime_parameters
+    oauth_app_runtime_parameters
+    + agent_langgraph_app_runtime_parameters
     + general_runtime_params
 )
 

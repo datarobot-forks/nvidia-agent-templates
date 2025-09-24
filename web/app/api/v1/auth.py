@@ -1,4 +1,4 @@
-# Copyright  DataRobot, Inc.
+# Copyright 2025 DataRobot, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -180,8 +180,6 @@ async def oauth_callback(
 
     params = request.query_params
 
-    logger.info("Oauth response", extra=request.query_params)
-
     # Provider returned error (e.g., user cancelled consent)
     if "error" in params:
         err = ErrorSchema(code=ErrorCodes.UNKNOWN_ERROR, message=params["error"])
@@ -191,7 +189,7 @@ async def oauth_callback(
 
     state = params.get("state")
 
-    logger.info("OAuth callback", extra={"state": state})
+    logger.debug("OAuth callback", extra={"state": state})
 
     if not state or "code" not in params:
         err = ErrorSchema(
@@ -203,8 +201,6 @@ async def oauth_callback(
         )
 
     oauth_sess = restore_oauth_session(request, state)
-
-    logger.info("Oauth session", extra={"session": oauth_sess})
 
     if oauth_sess is None:
         err = ErrorSchema(
@@ -335,7 +331,7 @@ async def oauth_callback(
 
         logger.info("logged in user", extra={"user_id": user.id, "identity": identity})
 
-        # refresh the user in order to get the actual identities array
+        # Refresh the user in order to get the actual identities array
 
         user = await user_repo.get_user(user_id=identity.user_id)
         request.session[AUTH_SESS_KEY] = user.to_auth_ctx().model_dump()

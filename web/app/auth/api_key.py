@@ -1,4 +1,4 @@
-# Copyright  DataRobot, Inc.
+# Copyright 2025 DataRobot, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ class DRUser(BaseModel):
 
     def to_profile(self) -> Profile:
         return Profile(
-            sub=self.id,
+            id=self.id,
             email=self.email,
             email_verified=True,
             name=f"{self.first_name or ''} {self.last_name or ''}".strip(),
@@ -90,6 +90,7 @@ class DRUser(BaseModel):
                 tenant_id=self.tenant_id,
                 feature_flags=self.feature_flags,
             ),
+            sub=self.id,
             preferred_username=self.email,
         )
 
