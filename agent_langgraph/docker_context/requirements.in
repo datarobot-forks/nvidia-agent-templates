@@ -10,6 +10,7 @@ numpy
 mistune
 numpy
 uwsgi
+google-api-python-client>=2.181.0
 
 # CVE Updates
 flask>=3.1.1

@@ -88,6 +88,7 @@ flatbuffers==25.2.10
 fqdn==1.5.1
 frozenlist==1.6.0
 fsspec==2025.3.0
+google-api-python-client>=2.181.0
 google-api-core==2.24.2
 google-auth==2.40.1
 google-cloud-aiplatform==1.96.0
