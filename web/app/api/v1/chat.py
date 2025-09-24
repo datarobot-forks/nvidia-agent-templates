@@ -395,16 +395,37 @@ async def _send_chat_agent_completion(
     messages: list[ChatCompletionMessageParam] = [
         ChatCompletionUserMessageParam(role="user", content=json.dumps(content)),
     ]
+    llm_message_content = ""
     async with openai_client as client:
-        completion = await client.chat.completions.create(
+        stream = await client.chat.completions.create(
             model=llm_model,
             messages=messages,
             extra_body={"google_token": oauth_token.access_token}
             if oauth_token
             else None,
+            stream=True
         )
-    llm_message_content = completion.choices[0].message.content or ""
-    await message_repo.update_message(
-        uuid=message_uuid,
-        update=MessageUpdate(content=llm_message_content, in_progress=False),
-    )
+        success = False
+        async for event in stream:
+            if event.choices[0].finish_reason == "stop":
+                success = True
+            if event.choices[0].delta.content is not None:
+                llm_message_content += event.choices[0].delta.content
+                await message_repo.update_message(
+                    uuid=message_uuid,
+                    update=MessageUpdate(content=llm_message_content, in_progress=True),
+                )
+        
+        if not success:
+            await message_repo.update_message(
+                uuid=message_uuid,
+                update=MessageUpdate(
+                    error="Model response did not complete successfully.",
+                    in_progress=False
+                )
+            )
+        else:
+            await message_repo.update_message(
+                uuid=message_uuid,
+                update=MessageUpdate(content=llm_message_content, in_progress=False,),
+            )
