@@ -13,14 +13,13 @@ import { chatKeys } from './keys';
 import { IChatMessage, IPostMessageContext, IUserMessage, IChat } from './types';
 
 export const useCreateChat = () => {
-
     const queryClient = useQueryClient();
     const navigate = useNavigate();
 
     return useMutation<IChat, Error, IUserMessage, IPostMessageContext>({
         mutationFn: ({ message }) => {
             return startNewChat({
-                message: message
+                message: message,
             });
         },
         onError: error => {

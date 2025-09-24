@@ -17,7 +17,7 @@ export function ChatResponseMessage({
     classNames?: string;
     message: IChatMessage;
 }) {
-    const messageLlmModel = message && message.model ? message.model : "?";
+    const messageLlmModel = message && message.model ? message.model : '?';
     return (
         <div className="my-3 py-3" data-testid="chat-response-message">
             <div className={cn('w-2xl px-3 flex gap-2 items-center', classNames)}>

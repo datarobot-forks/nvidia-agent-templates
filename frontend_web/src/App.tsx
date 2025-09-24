@@ -19,7 +19,6 @@ import Pages from '@/pages';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { Spinner } from '@/components/ui/spinner';
 
-
 import './App.css';
 import { useCurrentUser } from '@/api/auth/hooks.ts';
 import { Toaster } from '@/components/ui/toast';

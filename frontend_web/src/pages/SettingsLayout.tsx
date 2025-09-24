@@ -2,9 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { ROUTES } from './routes';
 import { cn } from '@/lib/utils';
 
-const navItems = [
-    { label: 'Connected sources', to: ROUTES.SETTINGS_SOURCES },
-];
+const navItems = [{ label: 'Connected sources', to: ROUTES.SETTINGS_SOURCES }];
 
 export const SettingsLayout = () => {
     return (

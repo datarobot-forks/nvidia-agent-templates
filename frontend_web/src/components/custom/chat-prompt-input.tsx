@@ -3,9 +3,7 @@ import { useParams } from 'react-router-dom';
 
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import {
-    Send,
-} from 'lucide-react';
+import { Send } from 'lucide-react';
 import { useCreateChat, usePostMessage } from '@/api/chat/hooks.ts';
 import { cn } from '@/lib/utils.ts';
 
@@ -27,7 +25,6 @@ export function ChatPromptInput({
         () => hasPendingMessage || isSendingMessage || isStartingChat,
         [hasPendingMessage, isSendingMessage, isStartingChat]
     );
-
 
     const handleSubmit = useCallback(async () => {
         if (message) {

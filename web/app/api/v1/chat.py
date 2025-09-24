@@ -14,30 +14,27 @@
 import json
 import logging
 import uuid as uuidpkg
+from contextlib import asynccontextmanager
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, AsyncIterator, Callable, Coroutine
 
 import datarobot as dr
 from datarobot.auth.session import AuthCtx
 from datarobot.auth.typing import Metadata
 from datarobot.client import RESTClientObject
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from openai import AsyncOpenAI
 from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
-from openai.types.chat.chat_completion_system_message_param import (
-    ChatCompletionSystemMessageParam,
-)
 from openai.types.chat.chat_completion_user_message_param import (
     ChatCompletionUserMessageParam,
 )
 from pydantic import ValidationError
 from sqlalchemy.exc import NoResultFound
 
-from app.api.v1.schema import ChatCompletionRequest
 from app.auth.ctx import must_get_auth_ctx
-from app.models.chats import Chat, ChatCreate, ChatRepository
-from app.models.messages import Message, MessageCreate, MessageRepository, Role
+from app.chats import Chat, ChatCreate, ChatRepository
+from app.messages import Message, MessageCreate, MessageRepository, MessageUpdate, Role
 from app.users.identity import ProviderType
 from app.users.tokens import Tokens
 from core import getenv
@@ -131,156 +128,6 @@ async def _get_or_create_chat_id(
         return new_chat.uuid, True
 
 
-@chat_router.post("/chat/completions")
-async def chat_completion(
-    request_data: ChatCompletionRequest,
-    request: Request,
-    auth_ctx: AuthCtx[Metadata] = Depends(must_get_auth_ctx),
-) -> Any:
-    # Extract parameters from request body
-    message = request_data.message
-    model = request_data.model
-    chat_id = request_data.chat_id
-
-    # Get current user's UUID
-    current_user = await _get_current_user(
-        request.app.state.deps.user_repo, int(auth_ctx.user.id)
-    )
-
-    # Get repositories
-    chat_repo: ChatRepository = request.app.state.deps.chat_repo
-    message_repo: MessageRepository = request.app.state.deps.message_repo
-
-    # Get the correct chat
-    chat_uuid, _ = await _get_or_create_chat_id(chat_repo, chat_id, current_user)
-    await message_repo.create_message(
-        MessageCreate(
-            chat_id=chat_uuid,
-            role=Role.USER,
-            model=model,
-            content=message,
-            components="",
-            error=None,
-        )
-    )
-
-    dr_client, deployment_chat_base_url = initialize_deployment(
-        request.app.state.deps.config.llm_deployment_id
-    )
-    openai_client = AsyncOpenAI(
-        api_key=dr_client.token,
-        base_url=deployment_chat_base_url,
-        timeout=90,
-        max_retries=2,
-    )
-
-    # Create OpenAI messages
-    messages: list[ChatCompletionMessageParam] = [
-        ChatCompletionSystemMessageParam(role="system", content=SYSTEM_PROMPT),
-        ChatCompletionUserMessageParam(role="user", content=message),
-    ]
-
-    async with openai_client as client:
-        completion = await client.chat.completions.create(
-            model=model,
-            messages=messages,
-        )
-    llm_message_content = completion.choices[0].message.content
-    response_message = await message_repo.create_message(
-        MessageCreate(
-            chat_id=chat_uuid,
-            role=Role.ASSISTANT,
-            model=model,
-            content=llm_message_content or "",
-            components="",
-            error=None,
-        )
-    )
-    return JSONResponse(content=response_message.dump_json_compatible())
-
-
-@chat_router.post("/chat/agent/completions")
-async def chat_agent_completion(
-    request_data: ChatCompletionRequest,
-    request: Request,
-    auth_ctx: AuthCtx[Metadata] = Depends(must_get_auth_ctx),
-) -> Any:
-    # Get current user's UUID
-    current_user = await _get_current_user(
-        request.app.state.deps.user_repo, int(auth_ctx.user.id)
-    )
-
-    message = request_data.message
-    llm_model = request_data.model
-    chat_id_str = request_data.chat_id or None
-
-    chat_repo: ChatRepository = request.app.state.deps.chat_repo
-    message_repo: MessageRepository = request.app.state.deps.message_repo
-
-    chat_id, _ = await _get_or_create_chat_id(chat_repo, chat_id_str, current_user)
-    await message_repo.create_message(
-        MessageCreate(
-            chat_id=chat_id,
-            role=Role.USER,
-            model=llm_model,
-            content=message,
-            components="",
-            error=None,
-        )
-    )
-    if agent_deployment_url:
-        # If the agent deployment URL is provided, use it directly
-        deployment_chat_base_url = agent_deployment_url
-        token = agent_deployment_token
-    else:
-        dr_client, deployment_chat_base_url = initialize_deployment(
-            request.app.state.deps.config.agent_retrieval_agent_deployment_id
-        )
-        token = dr_client.token
-    openai_client = AsyncOpenAI(
-        api_key=token,
-        base_url=deployment_chat_base_url,
-        timeout=90,
-        max_retries=2,
-    )
-    # Create OpenAI formatted for Crew AI
-    content: dict[str, Any] = {
-        "topic": "documentation",
-        "question": f"{message}",
-    }
-
-    oauth_token = None
-
-    for identity in auth_ctx.identities:
-        if identity.provider_type == ProviderType.GOOGLE:
-            oauth_tokens: Tokens = request.app.state.deps.tokens
-            oauth_token = await oauth_tokens.get_access_token(identity)
-
-    messages: list[ChatCompletionMessageParam] = [
-        ChatCompletionUserMessageParam(role="user", content=json.dumps(content)),
-    ]
-    async with openai_client as client:
-        completion = await client.chat.completions.create(
-            model=llm_model,
-            messages=messages,
-            extra_body={"google_token": oauth_token.access_token}
-            if oauth_token
-            else None,
-        )
-    llm_message_content = completion.choices[0].message.content or ""
-    response_message = await message_repo.create_message(
-        MessageCreate(
-            chat_id=chat_id,
-            role=Role.ASSISTANT,
-            model=llm_model,
-            content=llm_message_content,
-            components="",
-            error=None,
-        )
-    )
-    return JSONResponse(content=response_message.dump_json_compatible())
-
-
 @chat_router.get("/chat/llm/catalog")
 def get_available_llm_catalog(request: Request) -> Any:
     dr_client, _ = initialize_deployment(
@@ -371,3 +218,193 @@ async def get_chat_messages(request: Request, chat_uuid: uuidpkg.UUID) -> Any:
     message_repo = request.app.state.deps.message_repo
     messages = await message_repo.get_chat_messages(chat_uuid)
     return JSONResponse(content=[m.dump_json_compatible() for m in messages])
+
+
+@chat_router.post("/chat")
+async def create_chat(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    auth_ctx: AuthCtx[Metadata] = Depends(must_get_auth_ctx),
+) -> Chat:
+    """Create a new chat, trigger the chat completion and return the UUID of the new chat"""
+    # Get current user's UUID
+    current_user = await _get_current_user(
+        request.app.state.deps.user_repo, int(auth_ctx.user.id)
+    )
+
+    request_data = await request.json()
+    message = request_data["message"]
+    model = request_data.get("model", "gpt-4o")
+
+    chat_repo = request.app.state.deps.chat_repo
+    message_repo = request.app.state.deps.message_repo
+    new_chat: Chat = await chat_repo.create_chat(
+        ChatCreate(name="New Chat", user_uuid=current_user.uuid)
+    )
+
+    [_, response_message] = await _create_new_message_exchange(
+        message_repo, new_chat.uuid, model, message
+    )
+    chat_completion_task = _get_safe_completion_task(
+        model, request, response_message.uuid, auth_ctx
+    )
+    background_tasks.add_task(chat_completion_task)
+
+    return new_chat
+
+
+@chat_router.post("/chat/{chat_uuid}/messages")
+async def create_chat_messages(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    chat_uuid: uuidpkg.UUID,
+    auth_ctx: AuthCtx[Metadata] = Depends(must_get_auth_ctx),
+) -> list[Message]:
+    """Create a new message in an existing chat, trigger the chat completion and return the 'in progresss' message"""
+    request_data = await request.json()
+    message = request_data["message"]
+    model = request_data.get("model", "gpt-4o")
+
+    chat_repo = request.app.state.deps.chat_repo
+    message_repo = request.app.state.deps.message_repo
+
+    # Check if chat exists
+    chat = await chat_repo.get_chat(chat_uuid)
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+
+    [prompt_message, response_message] = await _create_new_message_exchange(
+        message_repo, chat.uuid, model, message
+    )
+    chat_completion_task = _get_safe_completion_task(
+        model, request, response_message.uuid, auth_ctx
+    )
+    background_tasks.add_task(chat_completion_task)
+
+    return [prompt_message, response_message]
+
+
+async def _create_new_message_exchange(
+    message_repo: MessageRepository,
+    chat_id: uuidpkg.UUID,
+    model: str,
+    user_message: str,
+) -> list[Message]:
+    prompt_message = await message_repo.create_message(
+        MessageCreate(
+            chat_id=chat_id,
+            role=Role.USER,
+            model=model,
+            content=user_message,
+            components="",
+            error=None,
+            in_progress=False,
+        )
+    )
+
+    response_message = await message_repo.create_message(
+        MessageCreate(
+            chat_id=chat_id,
+            role=Role.ASSISTANT,
+            model=model,
+            in_progress=True,
+            content="",
+            components="",
+            error=None,
+        )
+    )
+
+    return [prompt_message, response_message]
+
+
+@asynccontextmanager
+async def _update_message_on_exception(
+    request: Request, message_uuid: uuidpkg.UUID
+) -> AsyncIterator[None]:
+    """
+    Context manager for running a chat completions safely
+    - Catches exceptions raised inside the block
+    - Logs the error
+    - Updates DB or request state if needed
+    """
+    try:
+        yield
+    except Exception as e:
+        logger.error(f"{type(e).__name__} occurred %s", str(e))
+        message_repo: MessageRepository = request.app.state.deps.message_repo
+        update_model = MessageUpdate(in_progress=False, error=str(e))
+        await message_repo.update_message(
+            uuid=message_uuid,
+            update=update_model,
+        )
+
+
+def _get_safe_completion_task(
+    model: str,
+    request: Request,
+    message_uuid: uuidpkg.UUID,
+    auth_ctx: AuthCtx[Metadata] = Depends(must_get_auth_ctx),
+) -> Callable[[], Coroutine[Any, Any, None]]:
+    async def task() -> None:
+        async with _update_message_on_exception(request, message_uuid):
+            await _send_chat_agent_completion(request, message_uuid, auth_ctx)
+
+    return task
+
+
+async def _send_chat_agent_completion(
+    request: Request,
+    message_uuid: uuidpkg.UUID,
+    auth_ctx: AuthCtx[Metadata] = Depends(must_get_auth_ctx),
+) -> None:
+    request_data = await request.json()
+    message = request_data["message"]
+    llm_model = request_data.get("model", "gpt4o")
+
+    message_repo: MessageRepository = request.app.state.deps.message_repo
+
+    if agent_deployment_url:
+        # If the agent deployment URL is provided, use it directly
+        deployment_chat_base_url = agent_deployment_url
+        token = agent_deployment_token
+    else:
+        dr_client, deployment_chat_base_url = initialize_deployment(
+            request.app.state.deps.config.agent_retrieval_agent_deployment_id
+        )
+        token = dr_client.token
+
+    openai_client = AsyncOpenAI(
+        api_key=token,
+        base_url=deployment_chat_base_url,
+        timeout=90,
+        max_retries=2,
+    )
+    # Create OpenAI formatted for Crew AI
+    content: dict[str, Any] = {
+        "topic": "documentation",
+        "question": f"{message}",
+    }
+
+    oauth_token = None
+
+    for identity in auth_ctx.identities:
+        if identity.provider_type == ProviderType.GOOGLE:
+            oauth_tokens: Tokens = request.app.state.deps.tokens
+            oauth_token = await oauth_tokens.get_access_token(identity)
+
+    messages: list[ChatCompletionMessageParam] = [
+        ChatCompletionUserMessageParam(role="user", content=json.dumps(content)),
+    ]
+    async with openai_client as client:
+        completion = await client.chat.completions.create(
+            model=llm_model,
+            messages=messages,
+            extra_body={"google_token": oauth_token.access_token}
+            if oauth_token
+            else None,
+        )
+    llm_message_content = completion.choices[0].message.content or ""
+    await message_repo.update_message(
+        uuid=message_uuid,
+        update=MessageUpdate(content=llm_message_content, in_progress=False),
+    )

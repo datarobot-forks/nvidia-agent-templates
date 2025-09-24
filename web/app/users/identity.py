@@ -21,7 +21,7 @@ from sqlalchemy import Column, DateTime
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Field, Relationship, SQLModel, select
 
-from app.db import DBCtx, retry_on_integrity_error
+from app.db import DBCtx
 from app.users.user import User
 
 UPSERT_RETRIES: Final = 3
