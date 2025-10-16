@@ -113,13 +113,10 @@ def test_execution_environment_not_set_and_docker_context(monkeypatch):
     agent_infra.pulumi_datarobot.ExecutionEnvironment.assert_called_once()
     args, kwargs = agent_infra.pulumi_datarobot.ExecutionEnvironment.call_args
 
-    assert (
-        kwargs["resource_name"]
-        == "Execution Environment [docker_context] [agent_langgraph]"
-    )
+    assert kwargs["resource_name"] == "[unittest] [agent_langgraph] Execution Environment"
     assert kwargs["programming_language"] == "python"
-    assert kwargs["name"] == "[unittest] agent_langgraph"
-    assert kwargs["description"] == "Execution Environment for [unittest] agent_langgraph"  # fmt: skip
+    assert kwargs["name"] == "[unittest] [agent_langgraph] Execution Environment"
+    assert kwargs["description"] == "Execution Environment for [unittest] [agent_langgraph]"  # fmt: skip
     assert "docker_context_path" in kwargs
     assert "docker_image" not in kwargs
     assert kwargs["use_cases"] == ["customModel", "notebook"]
@@ -157,13 +154,10 @@ def test_execution_environment_not_set_with_docker_image(monkeypatch):
     agent_infra.pulumi_datarobot.ExecutionEnvironment.assert_called_once()
     args, kwargs = agent_infra.pulumi_datarobot.ExecutionEnvironment.call_args
 
-    assert (
-        kwargs["resource_name"]
-        == "Execution Environment [docker_context] [agent_langgraph]"
-    )
+    assert kwargs["resource_name"] == "[unittest] [agent_langgraph] Execution Environment"
     assert kwargs["programming_language"] == "python"
-    assert kwargs["name"] == "[unittest] agent_langgraph"
-    assert kwargs["description"] == "Execution Environment for [unittest] agent_langgraph"  # fmt: skip
+    assert kwargs["name"] == "[unittest] [agent_langgraph] Execution Environment"
+    assert kwargs["description"] == "Execution Environment for [unittest] [agent_langgraph]"  # fmt: skip
     assert "docker_image" in kwargs
     assert "docker_context_path" not in kwargs
     assert kwargs["use_cases"] == ["customModel", "notebook"]
@@ -194,10 +188,7 @@ def test_execution_environment_default_set(monkeypatch):
     args, kwargs = agent_infra.pulumi_datarobot.ExecutionEnvironment.get.call_args
 
     assert kwargs["id"] == "python-311-genai-agents-id"
-    assert (
-        kwargs["resource_name"]
-        == "Execution Environment [PRE-EXISTING] [agent_langgraph]"
-    )
+    assert kwargs["resource_name"] == "[unittest] [agent_langgraph] Execution Environment"
 
     # ExecutionEnvironment constructor should not be called when using default env
     agent_infra.pulumi_datarobot.ExecutionEnvironment.assert_not_called()
@@ -224,10 +215,7 @@ def test_execution_environment_custom_set(monkeypatch):
     args, kwargs = agent_infra.pulumi_datarobot.ExecutionEnvironment.get.call_args
 
     assert kwargs["id"] == "Custom Execution Environment"
-    assert (
-        kwargs["resource_name"]
-        == "Execution Environment [PRE-EXISTING] [agent_langgraph]"
-    )
+    assert kwargs["resource_name"] == "[unittest] [agent_langgraph] Execution Environment"
 
     # ExecutionEnvironment constructor should not be called when using custom env
     agent_infra.pulumi_datarobot.ExecutionEnvironment.assert_not_called()
@@ -261,8 +249,8 @@ def test_custom_model_created(monkeypatch):
 
     agent_infra.pulumi_datarobot.CustomModel.assert_called_once()
     args, kwargs = agent_infra.pulumi_datarobot.CustomModel.call_args
-    assert kwargs["resource_name"].startswith("Custom Model")
-    assert kwargs["name"] == "[unittest] agent_langgraph"
+    assert kwargs["resource_name"] == "[unittest] [agent_langgraph] Custom Model"
+    assert kwargs["name"] == "[unittest] [agent_langgraph] Custom Model"
     assert kwargs["base_environment_id"] == agent_infra.agent_langgraph_execution_environment.id  # fmt: skip
     assert (
         kwargs["base_environment_version_id"]
@@ -290,8 +278,8 @@ def test_custom_model_created_llm_deployment_id(monkeypatch):
 
     agent_infra.pulumi_datarobot.CustomModel.assert_called_once()
     args, kwargs = agent_infra.pulumi_datarobot.CustomModel.call_args
-    assert kwargs["resource_name"].startswith("Custom Model")
-    assert kwargs["name"] == "[unittest] agent_langgraph"
+    assert kwargs["resource_name"] == "[unittest] [agent_langgraph] Custom Model"
+    assert kwargs["name"] == "[unittest] [agent_langgraph] Custom Model"
     assert kwargs["base_environment_id"] == agent_infra.agent_langgraph_execution_environment.id  # fmt: skip
     assert (
         kwargs["base_environment_version_id"]
@@ -329,16 +317,16 @@ def test_agentic_playground_and_blueprint_created(monkeypatch):
     # Check that Agentic Playground was created
     agent_infra.pulumi_datarobot.Playground.assert_called_once()
     args, kwargs = agent_infra.pulumi_datarobot.Playground.call_args
-    assert kwargs["resource_name"].startswith("Agentic Playground")
-    assert kwargs["name"] == "[unittest] agent_langgraph"
+    assert kwargs["resource_name"] == "[unittest] [agent_langgraph] Agentic Playground"
+    assert kwargs["name"] == "[unittest] [agent_langgraph] Agentic Playground"
     assert kwargs["use_case_id"] == agent_infra.use_case.id
     assert kwargs["playground_type"] == "agentic"
 
     # Check that LlmBlueprint was created and points to the created custom model
     agent_infra.pulumi_datarobot.LlmBlueprint.assert_called_once()
     args, kwargs = agent_infra.pulumi_datarobot.LlmBlueprint.call_args
-    assert kwargs["resource_name"].startswith("LLM Blueprint")
-    assert kwargs["name"] == "[unittest] agent_langgraph"
+    assert kwargs["resource_name"] == "[unittest] [agent_langgraph] LLM Blueprint"
+    assert kwargs["name"] == "[unittest] [agent_langgraph] LLM Blueprint"
     assert kwargs["llm_id"] == "chat-interface-custom-model"
     assert kwargs["prompt_type"] == "ONE_TIME_PROMPT"
     assert kwargs[
@@ -380,11 +368,6 @@ def test_agent_deployment_created_when_env(monkeypatch):
     agent_infra.pulumi_datarobot.PredictionEnvironment.assert_called_once()
     # Check that CustomModelDeployment was created
     agent_infra.CustomModelDeployment.assert_called_once()
-    # Check that pulumi.export was called for deployment id and endpoint
-    agent_infra.pulumi.export.assert_any_call(
-        "Agent Deployment ID " + agent_infra.agent_langgraph_asset_name,
-        agent_infra.CustomModelDeployment.return_value.id,
-    )
     agent_infra.pulumi.export.assert_any_call(
         "Agent Deployment Chat Endpoint " + agent_infra.agent_langgraph_asset_name,
         agent_infra.CustomModelDeployment.return_value.id.apply.return_value,
@@ -450,3 +433,145 @@ class TestGetCustomModelFiles:
         files = agent_infra.get_custom_model_files(str(tmp_path))
         file_names = [f[1] for f in files]
         assert "real.py" in file_names
+
+
+class TestSynchronizePyprojectDependencies:
+    def test_synchronize_pyproject_dependencies_basic(self, tmp_path, monkeypatch):
+        import infra.agent_langgraph as agent_infra
+
+        # Mock the application path to point to our tmp_path
+        monkeypatch.setattr(agent_infra, "agent_langgraph_application_path", tmp_path)
+
+        # Create pyproject.toml in the application path
+        pyproject_content = """[project]
+name = "test-project"
+dependencies = ["requests>=2.0"]
+"""
+        (tmp_path / "pyproject.toml").write_text(pyproject_content)
+        (tmp_path / "uv.lock").write_text("test content")
+
+        # Create custom_model and docker_context directories
+        (tmp_path / "custom_model").mkdir()
+        (tmp_path / "docker_context").mkdir()
+
+        # Call the function
+        agent_infra.synchronize_pyproject_dependencies()
+
+        # Check that pyproject.toml was copied to both directories
+        assert (tmp_path / "custom_model" / "pyproject.toml").exists()
+        assert (tmp_path / "docker_context" / "pyproject.toml").exists()
+        assert (tmp_path / "custom_model" / "uv.lock").exists()
+        assert (tmp_path / "docker_context" / "uv.lock").exists()
+
+        # Verify the content is the same
+        assert (
+            tmp_path / "custom_model" / "pyproject.toml"
+        ).read_text() == pyproject_content
+        assert (
+            tmp_path / "docker_context" / "pyproject.toml"
+        ).read_text() == pyproject_content
+        assert (tmp_path / "custom_model" / "uv.lock").read_text() == "test content"
+        assert (tmp_path / "docker_context" / "uv.lock").read_text() == "test content"
+
+    def test_synchronize_pyproject_dependencies_no_pyproject(
+        self, tmp_path, monkeypatch
+    ):
+        import infra.agent_langgraph as agent_infra
+
+        # Mock the application path to point to our tmp_path
+        monkeypatch.setattr(agent_infra, "agent_langgraph_application_path", tmp_path)
+
+        # Create custom_model and docker_context directories but no pyproject.toml
+        (tmp_path / "custom_model").mkdir()
+        (tmp_path / "docker_context").mkdir()
+
+        # Call the function - should return early without error
+        agent_infra.synchronize_pyproject_dependencies()
+
+        # Check that no pyproject.toml files were created
+        assert not (tmp_path / "custom_model" / "pyproject.toml").exists()
+        assert not (tmp_path / "docker_context" / "pyproject.toml").exists()
+
+    def test_synchronize_pyproject_dependencies_missing_custom_model_dir(
+        self, tmp_path, monkeypatch
+    ):
+        import infra.agent_langgraph as agent_infra
+
+        # Mock the application path to point to our tmp_path
+        monkeypatch.setattr(agent_infra, "agent_langgraph_application_path", tmp_path)
+
+        # Create pyproject.toml and docker_context directory but not custom_model
+        pyproject_content = """[project]
+name = "test-project"
+"""
+        (tmp_path / "pyproject.toml").write_text(pyproject_content)
+        (tmp_path / "docker_context").mkdir()
+
+        # Call the function
+        agent_infra.synchronize_pyproject_dependencies()
+
+        # Check that pyproject.toml was only copied to docker_context
+        assert not (tmp_path / "custom_model").exists()
+        assert (tmp_path / "docker_context" / "pyproject.toml").exists()
+        assert (
+            tmp_path / "docker_context" / "pyproject.toml"
+        ).read_text() == pyproject_content
+
+    def test_synchronize_pyproject_dependencies_missing_docker_context_dir(
+        self, tmp_path, monkeypatch
+    ):
+        import infra.agent_langgraph as agent_infra
+
+        # Mock the application path to point to our tmp_path
+        monkeypatch.setattr(agent_infra, "agent_langgraph_application_path", tmp_path)
+
+        # Create pyproject.toml and custom_model directory but not docker_context
+        pyproject_content = """[project]
+name = "test-project"
+"""
+        (tmp_path / "pyproject.toml").write_text(pyproject_content)
+        (tmp_path / "custom_model").mkdir()
+
+        # Call the function
+        agent_infra.synchronize_pyproject_dependencies()
+
+        # Check that pyproject.toml was only copied to custom_model
+        assert (tmp_path / "custom_model" / "pyproject.toml").exists()
+        assert not (tmp_path / "docker_context").exists()
+        assert (
+            tmp_path / "custom_model" / "pyproject.toml"
+        ).read_text() == pyproject_content
+
+    def test_synchronize_pyproject_dependencies_overwrites_existing(
+        self, tmp_path, monkeypatch
+    ):
+        import infra.agent_langgraph as agent_infra
+
+        # Mock the application path to point to our tmp_path
+        monkeypatch.setattr(agent_infra, "agent_langgraph_application_path", tmp_path)
+
+        # Create pyproject.toml in the application path
+        new_content = """[project]
+name = "updated-project"
+dependencies = ["requests>=3.0"]
+"""
+        (tmp_path / "pyproject.toml").write_text(new_content)
+
+        # Create directories with existing pyproject.toml files
+        (tmp_path / "custom_model").mkdir()
+        (tmp_path / "docker_context").mkdir()
+
+        old_content = """[project]
+name = "old-project"
+"""
+        (tmp_path / "custom_model" / "pyproject.toml").write_text(old_content)
+        (tmp_path / "docker_context" / "pyproject.toml").write_text(old_content)
+
+        # Call the function
+        agent_infra.synchronize_pyproject_dependencies()
+
+        # Check that the old files were overwritten with new content
+        assert (tmp_path / "custom_model" / "pyproject.toml").read_text() == new_content
+        assert (
+            tmp_path / "docker_context" / "pyproject.toml"
+        ).read_text() == new_content

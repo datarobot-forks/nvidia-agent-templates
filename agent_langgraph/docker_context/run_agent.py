@@ -19,22 +19,17 @@ import os
 import socket
 import sys
 from pathlib import Path
-from typing import Any, TextIO, cast
+from typing import Any, List, TextIO, cast
 from urllib.parse import urlparse, urlunparse
 
-import requests
 from datarobot_drum.drum.enum import TargetType
 from datarobot_drum.drum.root_predictors.drum_inline_utils import drum_inline_predictor
-from datarobot_drum.drum.root_predictors.drum_server_utils import DrumServerRun
-from httpx import Timeout
-from openai import OpenAI
-from openai.types.chat import ChatCompletion
+from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from openai.types.chat.completion_create_params import (
     CompletionCreateParamsBase,
 )
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.propagate import inject
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.trace import Span, use_span
@@ -91,11 +86,6 @@ def argparse_args() -> argparse.Namespace:
         type=str,
         default=None,
         help="Custom attributes for tracing. Should be a JSON dictionary.",
-    )
-    parser.add_argument(
-        "--use_serverless",
-        action="store_true",
-        help="Use DRUM serverless predictor.",
     )
     args = parser.parse_args()
     return args
@@ -210,60 +200,10 @@ def setup_otel(args: Any) -> Span:
     return span
 
 
-def execute_drum(
-    chat_completion: CompletionCreateParamsBase,
-    default_headers: dict[str, str],
-    custom_model_dir: Path,
-) -> ChatCompletion:
-    root.info("Executing agent as [chat] endpoint. DRUM Executor.")
-    root.info("Starting DRUM server.")
-    with DrumServerRun(
-        target_type=TargetType.AGENTIC_WORKFLOW.value,
-        labels=None,
-        custom_model_dir=custom_model_dir,
-        with_error_server=True,
-        production=False,
-        verbose=True,
-        logging_level="info",
-        target_name="response",
-        wait_for_server_timeout=360,
-        port=get_open_port(),
-        stream_output=True,
-        max_workers=2,  # this will force drum tracing to not use batchprocessor
-    ) as drum_runner:
-        root.info("Verifying DRUM server")
-        response = requests.get(drum_runner.url_server_address)
-        if not response.ok:
-            root.error("Server failed to start")
-            try:
-                root.error(response.text)
-            finally:
-                raise RuntimeError("Server failed to start")
-
-        # inject OTEL headers into default_headers
-        inject(default_headers)
-
-        # Use a standard OpenAI client to call the DRUM server. This mirrors the behavior of a deployed agent.
-        # Using the `chat.completions.create` method ensures the parameters are OpenAI compatible.
-        root.info("Executing Agent")
-        client = OpenAI(
-            base_url=drum_runner.url_server_address,
-            api_key="not-required",
-            default_headers=default_headers,
-            max_retries=0,
-            timeout=Timeout(timeout=1200, connect=5.0),
-        )
-        completion = client.chat.completions.create(**chat_completion)
-
-    # Continue outside the context manager to ensure the server is stopped and logs
-    # are flushed before we write the output
-    return completion
-
-
 def execute_drum_inline(
     chat_completion: CompletionCreateParamsBase,
     custom_model_dir: Path,
-) -> ChatCompletion:
+) -> ChatCompletion | List[ChatCompletionChunk]:
     root.info("Executing agent as [chat] endpoint. DRUM Inline Executor.")
 
     root.info("Starting DRUM runner.")
@@ -273,9 +213,16 @@ def execute_drum_inline(
         target_name="response",
     ) as predictor:
         root.info("Executing Agent")
-        completion = predictor.chat(chat_completion)
 
-    return cast(ChatCompletion, completion)
+        if chat_completion.get("stream"):
+            completion_generator = predictor.chat(chat_completion)
+            return [
+                cast(ChatCompletionChunk, completion)
+                for completion in completion_generator
+            ]
+        else:
+            completion = predictor.chat(chat_completion)
+            return cast(ChatCompletion, completion)
 
 
 def construct_prompt(chat_completion: str) -> CompletionCreateParamsBase:
@@ -291,12 +238,23 @@ def construct_prompt(chat_completion: str) -> CompletionCreateParamsBase:
     return completion_create_params
 
 
-def store_result(result: ChatCompletion, trace_id: str, output_path: Path) -> None:
+def store_result(
+    result: ChatCompletion | List[ChatCompletionChunk], trace_id: str, output_path: Path
+) -> None:
     root.info(f"Storing result: {output_path}")
     with open(output_path, "w") as fp:
-        result_dict = result.model_dump()
-        result_dict["trace_id"] = trace_id
-        fp.write(json.dumps(result_dict))
+        if isinstance(result, list):
+            full_result = []
+            for chunk in result:
+                chunk_dict = chunk.model_dump()
+                chunk_dict["trace_id"] = trace_id
+                full_result.append(chunk_dict)
+
+            fp.write(json.dumps(full_result))
+        else:
+            result_dict = result.model_dump()
+            result_dict["trace_id"] = trace_id
+            fp.write(json.dumps(result_dict))
 
 
 def run_agent_procedure(args: Any) -> None:
@@ -312,17 +270,10 @@ def run_agent_procedure(args: Any) -> None:
         root.info(f"Trace id: {trace_id}")
 
         root.info(f"Executing request in directory {args.custom_model_dir}")
-        if args.use_serverless:
-            result = execute_drum_inline(
-                chat_completion=chat_completion,
-                custom_model_dir=args.custom_model_dir,
-            )
-        else:
-            result = execute_drum(
-                chat_completion=chat_completion,
-                default_headers=default_headers,
-                custom_model_dir=args.custom_model_dir,
-            )
+        result = execute_drum_inline(
+            chat_completion=chat_completion,
+            custom_model_dir=args.custom_model_dir,
+        )
         store_result(
             result,
             trace_id,

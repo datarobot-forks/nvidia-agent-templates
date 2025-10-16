@@ -1,4 +1,4 @@
-# DataRobot Agent Templates: Agent agent_langgraph
+# : Agent agent_langgraph
 
 The DataRobot agent template provides a starting point for building custom agents that can be deployed in DataRobot.
 This template can be modified to support various frameworks, including CrewAI, LangGraph, Llama-Index, or

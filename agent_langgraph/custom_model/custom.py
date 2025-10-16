@@ -11,23 +11,49 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ------------------------------------------------------------------------------
+# THIS SECTION OF CODE IS REQUIRED TO SETUP TRACING AND TELEMETRY FOR THE AGENTS.
+# REMOVING THIS CODE WILL DISABLE ALL MONITORING, TRACING AND TELEMETRY.
 # isort: off
-from helpers_telemetry import *  # noqa # pylint: disable=unused-import
+from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor
+from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+from opentelemetry.instrumentation.openai import OpenAIInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+
+instrument_requests = RequestsInstrumentor().instrument()
+instrument_aiohttp = AioHttpClientInstrumentor().instrument()
+instrument_httpx = HTTPXClientInstrumentor().instrument()
+instrument_openai = OpenAIInstrumentor().instrument()
+
+
+from opentelemetry.instrumentation.langchain import LangchainInstrumentor
+
+instrument_langchain = LangchainInstrumentor().instrument()
 import os
 
-# Some libraries collect telemetry data by default. Let's disable that.
-os.environ["RAGAS_DO_NOT_TRACK"] = "true"
+# Some libraries collect telemetry data by default. Let's disable that.os.environ["RAGAS_DO_NOT_TRACK"] = "true"
 os.environ["DEEPEVAL_TELEMETRY_OPT_OUT"] = "YES"
 # isort: on
+# ------------------------------------------------------------------------------
 
+
+from typing import Iterator, Union
+
+# ruff: noqa: E402
 from agent import MyAgent
-from auth import initialize_authorization_context
 from datarobot_drum import RuntimeParameters
 from helpers import (
     CustomModelChatResponse,
-    to_custom_model_response,
+    CustomModelStreamingResponse,
+    initialize_authorization_context,
+    to_custom_model_chat_response,
+    to_custom_model_streaming_response,
 )
 from openai.types.chat import CompletionCreateParams
+from openai.types.chat.completion_create_params import (
+    CompletionCreateParamsNonStreaming,
+    CompletionCreateParamsStreaming,
+)
 
 
 def maybe_set_env_from_runtime_parameters(key: str) -> None:
@@ -57,9 +83,11 @@ def load_model(code_dir: str) -> str:
 
 
 def chat(
-    completion_create_params: CompletionCreateParams,
+    completion_create_params: CompletionCreateParams
+    | CompletionCreateParamsNonStreaming
+    | CompletionCreateParamsStreaming,
     model: str,
-) -> CustomModelChatResponse:
+) -> Union[CustomModelChatResponse, Iterator[CustomModelStreamingResponse]]:
     """When using the chat endpoint, this function is called.
 
     Agent inputs are in OpenAI message format and defined as the 'user' portion
@@ -93,9 +121,22 @@ def chat(
     # allowing environment variables to be passed during execution
     agent = MyAgent(**completion_create_params)
 
-    # Execute the agent with the inputs
-    agent_result = agent.run(completion_create_params=completion_create_params)
+    if completion_create_params.get("stream"):
+        streaming_response_generator = agent.invoke(
+            completion_create_params=completion_create_params
+        )
+        return to_custom_model_streaming_response(
+            streaming_response_generator, model=completion_create_params.get("model")
+        )
+    else:
+        # Synchronous non-streaming response, execute the agent with the inputs
+        response_text, pipeline_interactions, usage_metrics = agent.invoke(
+            completion_create_params=completion_create_params
+        )
 
-    return to_custom_model_response(
-        *agent_result, model=completion_create_params["model"]
-    )
+        return to_custom_model_chat_response(
+            response_text,
+            pipeline_interactions,
+            usage_metrics,
+            model=completion_create_params.get("model"),
+        )

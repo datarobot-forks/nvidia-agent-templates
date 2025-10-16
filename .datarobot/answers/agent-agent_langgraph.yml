@@ -1,0 +1,6 @@
+# Changes here will be overwritten by Copier
+_commit: 11.2.35
+_src_path: git@github.com:datarobot/af-component-agent.git
+agent_app_name: agent_langgraph
+agent_template_framework: langgraph
+base_answers_file: .datarobot/answers/base.yml
