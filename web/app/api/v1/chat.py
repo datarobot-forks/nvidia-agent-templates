@@ -37,7 +37,7 @@ from app.chats import Chat, ChatCreate, ChatRepository
 from app.messages import Message, MessageCreate, MessageRepository, MessageUpdate, Role
 from app.users.identity import ProviderType
 from app.users.tokens import Tokens
-from core import getenv
+from core.config import getenv
 
 if TYPE_CHECKING:
     from app.users.user import User, UserRepository

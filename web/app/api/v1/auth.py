@@ -1,4 +1,4 @@
-# Copyright 2025 DataRobot, Inc.
+# Copyright  DataRobot, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@ import logging
 import uuid
 
 from datarobot.auth.oauth import (
-    AsyncOAuthComponent,
     OAuthData,
     OAuthProvider,
     OAuthToken,
@@ -28,12 +27,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError
 
 from app.api.v1.schema import ErrorCodes, ErrorSchema
-from app.auth.api_key import (
-    APIKeyValidator,
-    DRUser,
-    dr_api_key_schema,
-    optional_dr_api_key_schema,
-)
+from app.auth.api_key import APIKeyValidator, DRUser, dr_api_key_schema
 from app.auth.ctx import AUTH_SESS_KEY, get_auth_ctx, must_get_auth_ctx
 from app.auth.session import restore_oauth_session, store_oauth_sess
 from app.users.identity import AuthSchema, Identity, IdentityUpdate
@@ -119,7 +113,7 @@ async def oauth_list_providers(request: Request) -> OAuthProviderListSchema:
     """
     List available OAuth providers.
     """
-    auth: AsyncOAuthComponent = request.app.state.deps.auth
+    auth = request.app.state.deps.auth
     providers = await auth.get_providers()
 
     return OAuthProviderListSchema(providers=providers)
@@ -216,11 +210,25 @@ async def oauth_callback(
         "exchanging oauth authorization code", extra={"provider_id": provider_id}
     )
 
-    oauth_data: OAuthData = await auth.exchange_code(
-        provider_id=provider_id,
-        sess=oauth_sess,
-        params=params,
-    )
+    try:
+        oauth_data: OAuthData = await auth.exchange_code(
+            provider_id=provider_id,
+            sess=oauth_sess,
+            params=params,
+        )
+    except Exception as e:
+        logger.exception(
+            "OAuth service error during code exchange",
+            extra={"provider_id": provider_id, "error": str(e)},
+            exc_info=True,
+        )
+        err = ErrorSchema(
+            code=ErrorCodes.UNKNOWN_ERROR,
+            message=str(e),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=err.model_dump()
+        )
 
     token_data = oauth_data.token_data
     user_profile = oauth_data.user_profile
@@ -341,23 +349,6 @@ async def oauth_callback(
     request.session[AUTH_SESS_KEY] = user.to_auth_ctx().model_dump()
 
     return UserSchema.from_user(user)
-
-
-async def try_validate_dr_api_key(
-    request: Request,
-    credentials: HTTPAuthorizationCredentials | None = Depends(
-        optional_dr_api_key_schema
-    ),
-) -> DRUser | None:
-    api_key_validator: APIKeyValidator = request.app.state.deps.api_key_validator
-
-    if not credentials:
-        return None
-
-    api_key = credentials.credentials
-    dr_user = await api_key_validator.validate(api_key)
-
-    return dr_user
 
 
 async def validate_dr_api_key(

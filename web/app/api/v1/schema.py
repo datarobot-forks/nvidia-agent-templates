@@ -33,13 +33,3 @@ class ErrorSchema(BaseModel):
 
     code: str
     message: str
-
-
-class ChatCompletionRequest(BaseModel):
-    """
-    Request schema for chat completions
-    """
-
-    message: str
-    model: str
-    chat_id: str | None = None

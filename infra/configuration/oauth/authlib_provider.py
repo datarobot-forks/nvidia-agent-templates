@@ -41,7 +41,7 @@ if google_client_id and google_client_secret:
     pulumi.export("Google Client ID", google_client_id)
 
     google_client_secret_cred = datarobot.ApiTokenCredential(
-        f"Base Application Google Client Secret [{PROJECT_NAME}]",
+        f"Talk to My Docs Google Client Secret [{PROJECT_NAME}]",
         args=datarobot.ApiTokenCredentialArgs(
             api_token=str(google_client_secret),
         ),
@@ -65,7 +65,7 @@ if box_client_id and box_client_secret:
     pulumi.export("Box Client ID", box_client_id)
 
     box_client_secret_cred = datarobot.ApiTokenCredential(
-        f"Base Application Box Client Secret [{PROJECT_NAME}]",
+        f"Talk to My Docs Box Client Secret [{PROJECT_NAME}]",
         args=datarobot.ApiTokenCredentialArgs(
             api_token=str(box_client_secret),
         ),

@@ -31,7 +31,6 @@ from typing import (
 
 import datarobot as dr
 from fsspec import AbstractFileSystem
-from fsspec.implementations.local import LocalFileSystem
 
 from core.persistent_fs.kv_custom_app_implementattion import (
     KeyValue,
@@ -375,6 +374,7 @@ class DRFileSystem(AbstractFileSystem):  # type: ignore[misc]
         logger.debug("Removing file from catalog.", extra={"catalog_id": catalog_id})
         self.client.delete(f"files/{catalog_id}/")
 
+    @_keep_metadata_in_sync
     def _upload_to_catalog(self, virtual_path: str, local_path: str) -> None:
         logger.debug("Uploading file to catalog.", extra={"virtual_path": virtual_path})
         with open(local_path, "rb") as f:
@@ -457,6 +457,12 @@ def calculate_checksum(path: str) -> bytes:
     return adder.digest()
 
 
+def all_env_variables_present() -> bool:
+    # check if all env variables are present
+    expected_envs = ["DATAROBOT_ENDPOINT", "DATAROBOT_API_TOKEN", "APPLICATION_ID"]
+    return not any(not os.environ.get(env_name) for env_name in expected_envs)
+
+
 class _FileIOWrapper(io.FileIO):
     def __init__(
         self, fs_entity: DRFileSystem, virtual_path: str, name: str, mode: str
@@ -476,12 +482,3 @@ class _FileIOWrapper(io.FileIO):
             self._fs_entity._upload_to_catalog(self._virtual_path, self.name)
         else:
             logger.debug("Wrapper was empty")
-
-
-def get_file_system() -> AbstractFileSystem:
-    expected_envs = ["DATAROBOT_ENDPOINT", "DATAROBOT_API_TOKEN", "APPLICATION_ID"]
-    if any(not os.environ.get(env_name) for env_name in expected_envs):
-        # there is some env variables missing and probably it's a local run
-        # let's use local file system
-        return LocalFileSystem()
-    return DRFileSystem()

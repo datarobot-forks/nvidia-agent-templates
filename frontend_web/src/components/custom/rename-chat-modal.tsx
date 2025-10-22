@@ -22,7 +22,8 @@ export const RenameChatModal = () => {
     const { mutate: renameChat, isPending } = useChatsRename();
 
     const chat = useMemo(() => {
-        return chats.find(chat => chat.uuid === showRenameChatModalForId);
+        console.log('chats: %s', chats);
+        return chats && chats.find(chat => chat.uuid === showRenameChatModalForId);
     }, [chats, showRenameChatModalForId]);
 
     useEffect(() => {

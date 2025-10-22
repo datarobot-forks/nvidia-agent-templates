@@ -64,7 +64,6 @@ db.sqlite3-journal
 # Flask stuff:
 instance/
 .webassets-cache
-web/static/
 
 # Scrapy stuff:
 .scrapy
@@ -129,13 +128,15 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+.env*
 .venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+# Don't ignore template env file
+!.env.template
 
 # Spyder project settings
 .spyderproject
@@ -174,11 +175,5 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-tmp
-
-.DS_Store
-
-# Pulumi output from the latest stack apply
-pulumi_config.json
-
-database.sqlite
+web/static/
+.datarobot/

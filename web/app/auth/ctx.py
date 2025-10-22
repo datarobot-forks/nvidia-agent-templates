@@ -1,4 +1,4 @@
-# Copyright 2025 DataRobot, Inc.
+# Copyright  DataRobot, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import logging
 from typing import TYPE_CHECKING, Awaitable, Callable, Final
 
 from datarobot.auth.oauth import OAuthToken, Profile
@@ -22,15 +23,22 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api.v1.schema import ErrorCodes, ErrorSchema
 from app.auth.api_key import APIKeyValidator
-from app.users.identity import AuthSchema, IdentityUpdate, ProviderType
+from app.users.identity import (
+    AuthSchema,
+    IdentityRepository,
+    IdentityUpdate,
+    ProviderType,
+)
 from app.users.tokens import Tokens
-from app.users.user import UserCreate
+from app.users.user import UserCreate, UserRepository
 
 if TYPE_CHECKING:
     from app import Config
 
 
 AUTH_SESS_KEY: Final[str] = "auth"
+
+logger = logging.getLogger(name=__name__)
 
 
 class DRAppCtx(BaseModel):
@@ -51,22 +59,61 @@ def get_datarobot_ctx(request: Request) -> DRAppCtx:
     return DRAppCtx(api_key=scoped_api_key, email=ext_email)
 
 
+async def get_existing_session(
+    request: Request, dr_ctx: DRAppCtx
+) -> AuthCtx[Metadata] | None:
+    """
+    Validates the existing session user against the current DataRobot context.
+    If the session is valid and matches the current context, returns the AuthCtx.
+    Otherwise, returns None.
+    """
+    if (auth_sess := request.session.get(AUTH_SESS_KEY)) is None:
+        return None
+    try:
+        auth_ctx = AuthCtx[Metadata](**auth_sess)
+        metadata = auth_ctx.metadata or {}
+        stored_dr_ctx: DRAppCtx = DRAppCtx(**metadata.get("dr_ctx", {}))
+    except (KeyError, ValueError, TypeError) as e:
+        # Session data is corrupted, clear it
+        logger.warning(
+            "Invalid session data, clearing session", extra={"error": str(e)}
+        )
+        request.session.clear()
+        return None
+
+    # Database may disappear or get wiped while cookie is alive
+    # so we validate that first:
+    user_repo = request.app.state.deps.user_repo
+    # Check if the user still exists in the database
+    user = await user_repo.get_user(user_id=int(auth_ctx.user.id))
+
+    if not user:
+        logger.warning(
+            "Session user not found in database, clearing session",
+            extra={"user_id": auth_ctx.user.id},
+        )
+        request.session.clear()
+        return None
+
+    # User exists, try to match the stored context with the current context
+    if stored_dr_ctx != dr_ctx:
+        return None
+    return auth_ctx
+
+
 async def get_auth_ctx(
     request: Request, dr_ctx: DRAppCtx = Depends(get_datarobot_ctx)
 ) -> AuthCtx[Metadata] | None:
     """
     Loads the auth context from the session if it exists.
-    TODO: there may be a room for consolidation of this logic with the logic we have in the callback handler:
-        web/app/api/v1/auth.py:143
     """
-    if auth_sess := request.session.get(AUTH_SESS_KEY, {}):
-        # let's just use the existing in-app session
-        return AuthCtx[Metadata](**auth_sess)
+    if auth_sess := await get_existing_session(request, dr_ctx):
+        return auth_sess
 
     # no active app user session found, must be the first application visit
     api_key_validator: APIKeyValidator = request.app.state.deps.api_key_validator
-    user_repo = request.app.state.deps.user_repo
-    identity_repo = request.app.state.deps.identity_repo
+    user_repo: UserRepository = request.app.state.deps.user_repo
+    identity_repo: IdentityRepository = request.app.state.deps.identity_repo
 
     provider_type: ProviderType
     user_profile: Profile
@@ -111,6 +158,7 @@ async def get_auth_ctx(
     )
 
     if not identity:
+        # No identity found, we may need to create a new user
         user = await user_repo.get_user(email=user_profile.email)
 
         if not user:
@@ -134,7 +182,7 @@ async def get_auth_ctx(
         profile_metadata = user_profile.metadata or {}
 
         identity = await identity_repo.upsert_identity(
-            user_id=user.id,
+            user_id=user.id,  # type: ignore[arg-type]
             auth_type=AuthSchema.DATAROBOT,
             provider_id=provider_type,  # DataRobot auth schemas are global, so no specific provider ID exists
             provider_type=provider_type,
@@ -147,20 +195,20 @@ async def get_auth_ctx(
 
     # reload the user account data
     user = await user_repo.get_user(user_id=identity.user_id)
-    auth_ctx: AuthCtx[Metadata] = user.to_auth_ctx()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=ErrorSchema(
+                code=ErrorCodes.DATAROBOT_USER_ERROR,
+                message="Not able to reload the user account data.",
+            ).model_dump(),
+        )
+    auth_ctx = user.to_auth_ctx()
+    auth_ctx.metadata = {"dr_ctx": dr_ctx.model_dump()}
 
     request.session[AUTH_SESS_KEY] = auth_ctx.model_dump()
 
     return auth_ctx
-
-
-async def may_get_auth_ctx(
-    request: Request, dr_ctx: DRAppCtx = Depends(get_datarobot_ctx)
-) -> AuthCtx[Metadata] | None:
-    try:
-        return await get_auth_ctx(request, dr_ctx)
-    except HTTPException:
-        return None
 
 
 def must_get_auth_ctx(

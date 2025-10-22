@@ -34,7 +34,6 @@ box_client_secret = os.environ.get(BOX_CLIENT_SECRET)
 
 app_runtime_parameters = []
 
-
 # DataRobot OAuth Providers Service
 provider_ids: list[pulumi.Output[str]] = []
 
@@ -45,7 +44,7 @@ if google_client_id and google_client_secret:
     pulumi.export("Google Client ID", google_client_id)
 
     google_oauth = datarobot.AppOauth(
-        f"Base Application Google Client Secret [{PROJECT_NAME}]",
+        f"Talk to My Docs Google Client Secret [{PROJECT_NAME}]",
         type="google",
         client_id=google_client_id,
         client_secret=google_client_secret,
@@ -58,7 +57,7 @@ if box_client_id and box_client_secret:
     pulumi.export("Box Client ID", box_client_id)
 
     box_oauth = datarobot.AppOauth(
-        f"Base Application Box Client Secret [{PROJECT_NAME}]",
+        f"Talk to My Docs Box Client Secret [{PROJECT_NAME}]",
         type="box",
         client_id=box_client_id,
         client_secret=box_client_secret,

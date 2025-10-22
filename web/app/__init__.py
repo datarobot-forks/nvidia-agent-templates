@@ -18,7 +18,6 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator
 
-from core.telemetry.logging import init_logging
 from datarobot_asgi_middleware import DataRobotASGIMiddleware
 from fastapi import APIRouter, FastAPI, Request
 from fastapi.responses import HTMLResponse
@@ -26,9 +25,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.api import router as api_router
 from app.config import Config
 from app.deps import Deps, create_deps
+from app.api import router as api_router
+from core.telemetry import init_logging, configure_uvicorn_logging
 
 base_router = APIRouter()
 
@@ -53,12 +53,15 @@ async def health() -> dict[str, str]:
     return {"status": "healthy"}
 
 
-def get_app_base_url(api_port: str) -> str:
+def get_app_base_url(api_port: str | None) -> str:
     """Get and normalize the application base URL."""
     app_base_url = os.getenv("BASE_PATH", "")
     notebook_id = os.getenv("NOTEBOOK_ID", "")
     if not app_base_url and notebook_id:
-        app_base_url = f"notebook-sessions/{notebook_id}/ports/{api_port}"
+        if api_port:
+            app_base_url = f"notebook-sessions/{notebook_id}/ports/{api_port}"
+        else:
+            app_base_url = f"notebook-sessions/{notebook_id}"
 
     if app_base_url:
         return "/" + app_base_url.strip("/") + "/"
@@ -72,10 +75,6 @@ def get_manifest_assets(
     """
     Reads the Vite manifest and returns the JS and CSS files for the given entry.
     """
-    if not manifest_path.exists():
-        logger.info("No manifest file, assuming now JS or CSS files for the index pat")
-        return dict(js=[], css=[])
-
     with open(manifest_path, "r") as f:
         manifest = json.load(f)
 
@@ -95,7 +94,7 @@ def get_manifest_assets(
 
 
 def create_app(
-    title: str = "Example Template",
+    title: str = "AgentApplication",
     config: Config | None = None,
     deps: Deps | None = None,
 ) -> FastAPI:
@@ -106,6 +105,10 @@ def create_app(
         config = Config()
 
     init_logging(level=config.log_level, format_type=config.log_format)
+
+    configure_uvicorn_logging(
+        log_format=config.log_format, log_level=config.log_level.value
+    )
 
     logger.info("App is starting up.")
 
@@ -126,11 +129,10 @@ def create_app(
         session_cookie_name = config.session_cookie_name
     else:
         # Auto-generate based on base path to avoid conflicts between apps
-        api_port = os.getenv("PORT", "8080")
-        app_base_url = get_app_base_url(api_port)
+        cookie_path = get_app_base_url(None)
         # Create a safe cookie name from the base path
         cookie_suffix = (
-            app_base_url.strip("/").replace("/", "_").replace("-", "_") or "default"
+            cookie_path.strip("/").replace("/", "_").replace("-", "_") or "default"
         )
         session_cookie_name = f"sess_{cookie_suffix}"
 
@@ -140,6 +142,7 @@ def create_app(
         secret_key=config.session_secret_key,
         max_age=config.session_max_age,
         https_only=config.session_https_only,
+        path=cookie_path
     )
 
     app.include_router(base_router)

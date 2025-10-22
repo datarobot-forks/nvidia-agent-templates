@@ -1,4 +1,4 @@
-# Copyright 2025 DataRobot, Inc.
+# Copyright  DataRobot, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -157,7 +157,7 @@ class IdentityRepository:
         """
         identity = Identity(**identity_data.model_dump())
 
-        async with self._db.session() as sess:
+        async with self._db.session(writable=True) as sess:
             sess.add(identity)
             await sess.commit()
             await sess.refresh(identity)
@@ -237,7 +237,7 @@ class IdentityRepository:
         attempt = 0
         while True:
             attempt += 1
-            async with self._db.session() as sess:
+            async with self._db.session(writable=True) as sess:
                 query = await sess.exec(
                     select(Identity).where(
                         Identity.provider_user_id == provider_user_id
@@ -287,7 +287,7 @@ class IdentityRepository:
         """
         Update an existing connection in the database.
         """
-        async with self._db.session() as sess:
+        async with self._db.session(writable=True) as sess:
             identity = await self.get_identity_by_id(identity_id=identity_id)
 
             if not identity:
@@ -306,7 +306,7 @@ class IdentityRepository:
         """
         Delete a connection by its ID.
         """
-        async with self._db.session() as sess:
+        async with self._db.session(writable=True) as sess:
             identity = await self.get_identity_by_id(identity_id)
 
             if not identity:
@@ -319,7 +319,7 @@ class IdentityRepository:
         """
         Delete all connections for a given user ID.
         """
-        async with self._db.session() as sess:
+        async with self._db.session(writable=True) as sess:
             async with sess.begin():
                 connections = await sess.exec(
                     select(Identity).where(Identity.user_id == user_id)

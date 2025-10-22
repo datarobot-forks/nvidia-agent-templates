@@ -1,4 +1,4 @@
-# Copyright 2025 DataRobot, Inc.
+# Copyright  DataRobot, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,13 +26,6 @@ dr_api_key_schema = HTTPBearer(
     scheme_name="DataRobot API Key",
     description="DataRobot API Key for authentication. "
     "The key should be passed in the `Authorization` header as `Bearer <api_key>`.",
-)
-
-optional_dr_api_key_schema = HTTPBearer(
-    scheme_name="DataRobot API Key",
-    description="DataRobot API Key for authentication. ",
-    auto_error=False,
-    bearerFormat="The key should be passed in the `Authorization` header as `Bearer <api_key>`.",
 )
 
 
@@ -90,8 +83,6 @@ class DRUser(BaseModel):
                 tenant_id=self.tenant_id,
                 feature_flags=self.feature_flags,
             ),
-            sub=self.id,
-            preferred_username=self.email,
         )
 
 

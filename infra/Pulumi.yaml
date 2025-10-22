@@ -1,7 +1,8 @@
 ---
-name: "datarobot-agent-templates"
+name: "application-agent"
 description: |-
-  This is a template for DataRobot Agents.
+  This is a template for a bare application with an agent.
+
 runtime:
   name: python
   options:
@@ -10,4 +11,4 @@ config:
   pulumi:tags:
     value:
       pulumi:template: python
-  datarobot:tracecontext: "datarobot-agent-templates"
+  datarobot:tracecontext: "application-agent"

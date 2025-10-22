@@ -11,34 +11,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
-from contextlib import asynccontextmanager
-from functools import wraps
-from typing import (
-    AsyncGenerator,
-    Callable,
-    Concatenate,
-    Coroutine,
-    ParamSpec,
-    Protocol,
-    TypeVar,
-    cast,
-)
 
-from core.persistent_fs.dr_file_system import DRFileSystem, calculate_checksum
-from sqlalchemy import text
-from sqlalchemy.exc import IntegrityError
+from asyncio import Lock
+from contextlib import asynccontextmanager, nullcontext
+from typing import AsyncGenerator, cast
+
+from core.persistent_fs.dr_file_system import (
+    DRFileSystem,
+    all_env_variables_present,
+    calculate_checksum,
+)
+from sqlalchemy import event, text
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
-from sqlmodel import SQLModel
+from sqlalchemy.orm import UOWTransaction
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 
 def _prepare_persistence_storage(
     engine: AsyncEngine,
 ) -> tuple[DRFileSystem, str] | tuple[None, None]:
-    # check if all env variables are present
-    expected_envs = ["DATAROBOT_ENDPOINT", "DATAROBOT_API_TOKEN", "APPLICATION_ID"]
-    if any(not os.environ.get(env_name) for env_name in expected_envs):
+    if not all_env_variables_present():
         return None, None
 
     if "sqlite" not in engine.url.drivername:
@@ -56,7 +48,6 @@ class DBCtx:
         self.engine = engine
 
         self._session = async_sessionmaker(
-            autocommit=False,
             autoflush=False,
             class_=AsyncSession,
             bind=engine,
@@ -67,20 +58,50 @@ class DBCtx:
         self._db_path: str | None
         self._persistence_fs, self._db_path = _prepare_persistence_storage(engine)
 
+        self._lock: Lock | nullcontext = nullcontext()  # type: ignore[type-arg]
+        if self._persistence_fs:
+            self._lock = Lock()
+
     @asynccontextmanager
-    async def session(self) -> AsyncGenerator[AsyncSession, None]:
-        checksum: bytes | None = None
+    async def _read_session(self) -> AsyncGenerator[AsyncSession, None]:
+        def prevent_writes(
+            session_: AsyncSession, flush_context: UOWTransaction, instances: None
+        ) -> None:
+            if session_.dirty or session_.new or session_.deleted:
+                raise RuntimeError(
+                    "This session is read-only and cannot perform writes."
+                )
+
         if self._persistence_fs and self._persistence_fs.exists(self._db_path):
             self._persistence_fs.get(self._db_path, self._db_path)
-            checksum = calculate_checksum(cast(str, self._db_path))
 
         async with self._session() as session:
+            event.listen(session.sync_session, "before_flush", prevent_writes)
             yield session
 
-        if self._persistence_fs:
-            new_checksum = calculate_checksum(cast(str, self._db_path))
-            if new_checksum != checksum:
-                self._persistence_fs.put(self._db_path, self._db_path)
+    @asynccontextmanager
+    async def _write_session(self) -> AsyncGenerator[AsyncSession, None]:
+        async with self._lock:
+            checksum: bytes | None = None
+            if self._persistence_fs and self._persistence_fs.exists(self._db_path):
+                self._persistence_fs.get(self._db_path, self._db_path)
+                checksum = calculate_checksum(cast(str, self._db_path))
+
+            async with self._session() as session:
+                yield session
+
+            if self._persistence_fs:
+                new_checksum = calculate_checksum(cast(str, self._db_path))
+                if new_checksum != checksum:
+                    self._persistence_fs.put(self._db_path, self._db_path)
+
+    @asynccontextmanager
+    async def session(
+        self, writable: bool = False
+    ) -> AsyncGenerator[AsyncSession, None]:
+        session_context = self._write_session if writable else self._read_session
+        async with session_context() as session:
+            yield session
 
     async def shutdown(self) -> None:
         """
@@ -88,52 +109,6 @@ class DBCtx:
         Call this on application shutdown.
         """
         await self.engine.dispose()
-
-
-P = ParamSpec("P")
-T = TypeVar("T", covariant=True)
-
-
-class Repository(Protocol):
-    @property
-    def _db(self) -> DBCtx: ...
-
-
-R = TypeVar("R", bound=Repository)
-
-
-def retry_on_integrity_error(
-    f: Callable[Concatenate[R, AsyncSession, P], Coroutine[None, None, T]],
-    retry_count: int = 3,
-) -> Callable[Concatenate[R, P], Coroutine[None, None, T]]:
-    """
-    A decorator for a method of a repository that
-    1. Wraps the method in a session (closing/aborting the session).
-    2. Retries the method up to `retry_count` times if it errors out.
-
-    The use case of this decorator is to smooth over gaps in SQLite's transactions/constraints
-    compared to other DBs: upserts that are nice and atomic in e.g. Postgres are not so by
-    default in SQLite. (And the way to accomplish this, with `BEGIN (IMMEDIATE|EXCLUSIVE)`
-    ransactions is likely to cause locking issue because of SQLite's full-DB locks, so retries
-    can be the lesser of two evils.)
-    """
-    if retry_count < 0:
-        raise ValueError("retry_count must be non-negative.")
-
-    @wraps(f)
-    async def inner(self: R, *args: P.args, **kwargs: P.kwargs) -> T:
-        async with self._db.session() as sess:
-            attempt = 0
-            while True:
-                attempt += 1
-                try:
-                    return await f(self, sess, *args, **kwargs)
-                except IntegrityError:
-                    await sess.rollback()
-                    if attempt == retry_count:
-                        raise
-
-    return inner  # type:ignore[return-value]
 
 
 async def create_db_ctx(db_url: str, log_sql_stmts: bool = False) -> DBCtx:
@@ -145,9 +120,5 @@ async def create_db_ctx(db_url: str, log_sql_stmts: bool = False) -> DBCtx:
     async with async_engine.begin() as conn:
         # testing DB credentials...
         await conn.execute(text("select '1'"))
-
-        await conn.run_sync(
-            SQLModel.metadata.create_all
-        )  # create_all is a blocking method
 
     return DBCtx(async_engine)

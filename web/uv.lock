@@ -128,6 +128,21 @@ wheels = [
 ]
 
 [[package]]
+name = "alembic"
+version = "1.17.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "mako" },
+    { name = "sqlalchemy" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6b/45/6f4555f2039f364c3ce31399529dcf48dd60726ff3715ad67f547d87dfd2/alembic-1.17.0.tar.gz", hash = "sha256:4652a0b3e19616b57d652b82bfa5e38bf5dbea0813eed971612671cb9e90c0fe", size = 1975526, upload-time = "2025-10-11T18:40:13.585Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/44/1f/38e29b06bfed7818ebba1f84904afdc8153ef7b6c7e0d8f3bc6643f5989c/alembic-1.17.0-py3-none-any.whl", hash = "sha256:80523bc437d41b35c5db7e525ad9d908f79de65c27d6a5a5eab6df348a352d99", size = 247449, upload-time = "2025-10-11T18:40:16.288Z" },
+]
+
+[[package]]
 name = "annotated-types"
 version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -415,13 +430,12 @@ version = "0.1.0"
 source = { editable = "core" }
 dependencies = [
     { name = "aiosqlite" },
-    { name = "datarobot", extra = ["auth-authlib"] },
+    { name = "datarobot", extra = ["auth-authlib", "core"] },
     { name = "duckdb" },
     { name = "fsspec" },
     { name = "openai" },
     { name = "pdf2image" },
     { name = "pillow" },
-    { name = "pydantic-settings" },
     { name = "pymupdf" },
     { name = "python-docx" },
     { name = "python-pptx" },
@@ -430,13 +444,12 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.21.0,<0.22" },
-    { name = "datarobot", extras = ["auth-authlib"], specifier = ">=3.8.2,<3.9" },
+    { name = "datarobot", extras = ["auth-authlib", "core"], specifier = ">=3.9.1" },
     { name = "duckdb", specifier = ">=1.3.1,<1.4" },
     { name = "fsspec", specifier = ">=2025.5,<2025.6" },
     { name = "openai", specifier = ">=1.59.9,<2" },
     { name = "pdf2image", specifier = ">=1.17.0" },
     { name = "pillow", specifier = ">=11.2.1" },
-    { name = "pydantic-settings", specifier = ">=2.10.1" },
     { name = "pymupdf", specifier = ">=1.25.5" },
     { name = "python-docx", specifier = ">=1.1.2" },
     { name = "python-pptx", specifier = ">=1.0.2" },
@@ -587,10 +600,9 @@ wheels = [
 
 [[package]]
 name = "datarobot"
-version = "3.8.2"
+version = "3.9.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "mypy-extensions" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pandas" },
@@ -602,9 +614,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/69/12/325bf553f71d56772631ebf0c636df8e92ecc5679f474b3210410c6ce97e/datarobot-3.8.2.tar.gz", hash = "sha256:299eac73dbda44913916f103181358132ec29332d9d981ce5c9d42f4f00d3737", size = 716770, upload-time = "2025-07-16T15:30:11.781Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ec/90/90c0a143f7e1564b0d7e909e70b70a1358c701528a8205b3f8e51bdf9a03/datarobot-3.9.1.tar.gz", hash = "sha256:1c35fee01c06c8077973bbf4b5cf012ed40520903a038afa4fe72e137bc27135", size = 735758, upload-time = "2025-10-10T18:02:58.234Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/25/6f/495742af3b66c202994d013eb80d96d5c3b85d5519ff8cb169bd1e5a5629/datarobot-3.8.2-py3-none-any.whl", hash = "sha256:85b07d407e1f5b14f12c3895c2fb6b51aa0d514cfa46d417bd0e102ebd885540", size = 769003, upload-time = "2025-07-16T15:30:10.277Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/d3/d49cb61bf83220bc34764abe82f31ef64500513ab82d78a24cddc2114d63/datarobot-3.9.1-py3-none-any.whl", hash = "sha256:4aa1f47ca96c3aa031fdaea43faf6410e8ed90c57e09f4b1335ec2369a49c83d", size = 792560, upload-time = "2025-10-10T18:02:55.969Z" },
 ]
 
 [package.optional-dependencies]
@@ -612,6 +624,10 @@ auth-authlib = [
     { name = "authlib" },
     { name = "httpx" },
     { name = "pydantic" },
+]
+core = [
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
 ]
 
 [[package]]
@@ -1208,12 +1224,15 @@ wheels = [
 ]
 
 [[package]]
-name = "markdown"
-version = "3.9"
+name = "mako"
+version = "1.3.10"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/8d/37/02347f6d6d8279247a5837082ebc26fc0d5aaeaf75aa013fcbb433c777ab/markdown-3.9.tar.gz", hash = "sha256:d2900fe1782bd33bdbbd56859defef70c2e78fc46668f8eb9df3128138f2cb6a", size = 364585, upload-time = "2025-09-04T20:25:22.885Z" }
+dependencies = [
+    { name = "markupsafe" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9e/38/bd5b78a920a64d708fe6bc8e0a2c075e1389d53bef8413725c63ba041535/mako-1.3.10.tar.gz", hash = "sha256:99579a6f39583fa7e5630a28c3c1f440e4e97a414b80372649c0ce338da2ea28", size = 392474, upload-time = "2025-04-10T12:44:31.16Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/70/ae/44c4a6a4cbb496d93c6257954260fe3a6e91b7bed2240e5dad2a717f5111/markdown-3.9-py3-none-any.whl", hash = "sha256:9f4d91ed810864ea88a6f32c07ba8bee1346c0cc1f6b1f9f6c822f2a9667d280", size = 107441, upload-time = "2025-09-04T20:25:21.784Z" },
+    { url = "https://files.pythonhosted.org/packages/87/fb/99f81ac72ae23375f22b7afdb7642aba97c00a713c217124420147681a2f/mako-1.3.10-py3-none-any.whl", hash = "sha256:baef24a52fc4fc514a0887ac600f9f1cff3d82c61d4d700a1fa84d597b88db59", size = 78509, upload-time = "2025-04-10T12:50:53.297Z" },
 ]
 
 [[package]]
@@ -2805,15 +2824,15 @@ source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
     { name = "aiosqlite" },
+    { name = "alembic" },
     { name = "asyncpg" },
     { name = "core" },
-    { name = "datarobot", extra = ["auth-authlib"] },
+    { name = "datarobot", extra = ["auth-authlib", "core"] },
     { name = "datarobot-asgi-middleware" },
     { name = "fastapi", extra = ["standard"] },
     { name = "greenlet" },
     { name = "httpx" },
     { name = "itsdangerous" },
-    { name = "markdown" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "python-dotenv" },
@@ -2836,15 +2855,15 @@ dev = [
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.9.0" },
     { name = "aiosqlite", specifier = ">=0.21.0" },
+    { name = "alembic", specifier = ">=1.16.5" },
     { name = "asyncpg", specifier = ">=0.30.0" },
     { name = "core", editable = "core" },
-    { name = "datarobot", extras = ["auth-authlib"], specifier = ">=3.8.2,<=3.9.0" },
+    { name = "datarobot", extras = ["auth-authlib", "core"], specifier = ">=3.9.1" },
     { name = "datarobot-asgi-middleware", specifier = ">=0.2.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.115.11" },
     { name = "greenlet", specifier = ">=3.2.1" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "itsdangerous", specifier = ">=2.2.0" },
-    { name = "markdown", specifier = ">=3.9" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8.0" },
     { name = "pydantic", specifier = ">=2.11.4" },
     { name = "pydantic-settings", specifier = ">=2.9.1" },

@@ -31,10 +31,12 @@ if use_case_id := os.environ.get("DATAROBOT_DEFAULT_USE_CASE"):
 
     use_case = datarobot.UseCase.get(
         id=use_case_id,
-        resource_name="DataRobot Agent Templates [PRE-EXISTING]",
+        resource_name="Application Agent [PRE-EXISTING]",
     )
 else:
     use_case = datarobot.UseCase(
-        resource_name=f"DataRobot Agent Templates [{PROJECT_NAME}]",
-        description="""This is a template for DataRobot Agents.""",
+        resource_name=f"Application Agent [{PROJECT_NAME}]",
+        description="""This is an amazing application template that does wonderful things.
+  * Feature 1
+""",
     )

@@ -12,11 +12,14 @@ tasks:
     cmds:
       - echo "🔨 Starting development server"
       - uv run uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
+    env:
+      TEST_USER_EMAIL: developer@example.com
   dev-agent:
     silent: true
     desc: "🔨 Run the development server with the local agent server"
     env:
       AGENT_DEPLOYMENT_URL: http://localhost:8842
+      TEST_USER_EMAIL: developer@example.com
     cmds:
       - echo "🔨 Starting development server"
       - uv run uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
